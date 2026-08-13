@@ -1,0 +1,2147 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TICKETPASS — ระบบจองบัตรคอนเสิร์ต + CRM</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bai+Jamjuree:wght@400;500;600;700&family=IBM+Plex+Sans+Thai:wght@300;400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<style>
+/* ============ TOKENS ============ */
+:root{
+  --ink:#0A0912;          /* base */
+  --panel:#141020;        /* card */
+  --panel-2:#1D1730;      /* raised */
+  --line:#2C2444;
+  --violet:#A855F7;
+  --magenta:#EC4899;
+  --gold:#F5C451;
+  --mint:#34D399;
+  --text:#F1EDFA;
+  --muted:#9A90B8;
+  --dim:#6B6288;
+  --r:14px;
+  --grad:linear-gradient(100deg,#A855F7 0%,#EC4899 60%,#F97316 120%);
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{
+  background:var(--ink);
+  color:var(--text);
+  font-family:"IBM Plex Sans Thai","Noto Sans Thai",system-ui,-apple-system,sans-serif;
+  font-weight:300;
+  -webkit-font-smoothing:antialiased;
+  min-height:100vh;
+}
+body::before{
+  content:"";position:fixed;inset:0;pointer-events:none;z-index:0;
+  background:
+    radial-gradient(900px 480px at 12% -8%, rgba(168,85,247,.22), transparent 62%),
+    radial-gradient(760px 420px at 92% 4%, rgba(236,72,153,.15), transparent 60%);
+}
+h1,h2,h3,h4,.display{font-family:"Bai Jamjuree","Bai Jamjuree",sans-serif;font-weight:600;letter-spacing:-.01em;margin:0}
+.mono{font-family:"IBM Plex Mono",ui-monospace,monospace}
+a{color:inherit;text-decoration:none}
+button{font-family:inherit}
+:focus-visible{outline:2px solid var(--violet);outline-offset:2px;border-radius:6px}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+
+/* ============ SHELL ============ */
+.wrap{position:relative;z-index:1;max-width:1180px;margin:0 auto;padding:0 20px}
+header.nav{position:sticky;top:0;z-index:50;backdrop-filter:blur(14px);background:rgba(10,9,18,.78);border-bottom:1px solid var(--line)}
+.nav-in{display:flex;align-items:center;gap:22px;height:64px}
+.logo{display:flex;align-items:center;gap:9px;cursor:pointer}
+.logo-mark{width:26px;height:26px;border-radius:7px;background:var(--grad);position:relative;flex:none}
+.logo-mark::after{content:"";position:absolute;left:50%;top:-1px;bottom:-1px;width:5px;transform:translateX(-50%);
+  background:radial-gradient(circle at 50% 0,var(--ink) 2.5px,transparent 2.6px) repeat-y;background-size:5px 6px}
+.logo-txt{font-family:"Bai Jamjuree";font-weight:700;letter-spacing:.16em;font-size:15px}
+nav.links{display:flex;gap:4px;margin-left:auto;flex-wrap:wrap}
+nav.links button{background:none;border:0;color:var(--muted);padding:8px 13px;border-radius:9px;cursor:pointer;font-size:14px;font-weight:400}
+nav.links button:hover{color:var(--text);background:rgba(255,255,255,.05)}
+nav.links button.on{color:var(--text);background:rgba(168,85,247,.16);box-shadow:inset 0 0 0 1px rgba(168,85,247,.35)}
+main{padding:34px 0 80px;min-height:70vh}
+
+/* ============ ATOMS ============ */
+.eyebrow{font-family:"IBM Plex Mono";font-size:11px;letter-spacing:.22em;text-transform:uppercase;color:var(--violet)}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:var(--r)}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;border:0;border-radius:11px;padding:12px 22px;
+  font-weight:600;font-size:15px;cursor:pointer;color:#fff;background:var(--grad);font-family:"Bai Jamjuree"}
+.btn:hover{filter:brightness(1.1)}
+.btn:disabled{opacity:.38;cursor:not-allowed;filter:none}
+.btn.ghost{background:transparent;color:var(--text);box-shadow:inset 0 0 0 1px var(--line)}
+.btn.ghost:hover{background:rgba(255,255,255,.05)}
+.btn.sm{padding:8px 15px;font-size:13.5px;border-radius:9px}
+.pill{display:inline-block;padding:4px 11px;border-radius:999px;font-size:11.5px;font-family:"IBM Plex Mono";letter-spacing:.06em}
+.pill.ok{background:rgba(52,211,153,.14);color:var(--mint)}
+.pill.wait{background:rgba(245,196,81,.14);color:var(--gold)}
+.pill.no{background:rgba(236,72,153,.14);color:var(--magenta)}
+input,select,textarea{width:100%;background:#0F0C1A;border:1px solid var(--line);color:var(--text);
+  border-radius:10px;padding:11px 13px;font-family:inherit;font-size:14.5px;font-weight:300}
+input:focus,select:focus{border-color:var(--violet);outline:none}
+label.f{display:block;font-size:12.5px;color:var(--muted);margin:0 0 6px;letter-spacing:.02em}
+.field{margin-bottom:14px}
+.grid{display:grid;gap:16px}
+.sec-head{display:flex;align-items:baseline;gap:14px;margin:0 0 18px;flex-wrap:wrap}
+.crumb{font-size:13px;color:var(--dim);margin-bottom:18px;cursor:pointer;display:inline-flex;gap:7px;align-items:center}
+.crumb:hover{color:var(--violet)}
+
+/* ============ HOME ============ */
+.hero{display:grid;grid-template-columns:1.15fr .85fr;gap:34px;align-items:center;margin-bottom:56px}
+.hero h1{font-size:clamp(34px,5vw,58px);line-height:1.04;margin:14px 0 16px}
+.hero h1 em{font-style:normal;background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
+.hero p{color:var(--muted);font-size:16px;line-height:1.7;max-width:44ch;margin:0 0 26px}
+.hero-cta{display:flex;gap:12px;flex-wrap:wrap}
+.stats{display:flex;gap:30px;margin-top:34px;padding-top:24px;border-top:1px solid var(--line);flex-wrap:wrap}
+.stat b{display:block;font-family:"Bai Jamjuree";font-size:24px;font-weight:600}
+.stat span{font-size:12px;color:var(--dim)}
+
+.evgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(255px,1fr));gap:18px}
+.ev{overflow:hidden;cursor:pointer;transition:transform .18s,border-color .18s}
+.ev:hover{transform:translateY(-4px);border-color:rgba(168,85,247,.5)}
+.ev .thumb{height:128px;position:relative;background:#171126}
+.ev .thumb .g{position:absolute;inset:0}
+.ev .body{padding:15px 16px 17px}
+.ev .body h4{font-size:16px;margin-bottom:5px}
+.ev .body .l{font-size:12.5px;color:var(--dim);display:flex;justify-content:space-between;gap:10px;margin-top:10px}
+.tag{position:absolute;top:11px;left:11px;font-size:10.5px;font-family:"IBM Plex Mono";letter-spacing:.12em;
+  background:rgba(10,9,18,.72);border:1px solid rgba(255,255,255,.16);padding:4px 9px;border-radius:6px}
+
+/* ============ SEATMAP ============ */
+.map-layout{display:grid;grid-template-columns:1fr 300px;gap:20px;align-items:start}
+.map-box{padding:14px;background:#050409;border:1px solid #241E33;border-radius:var(--r)}
+svg.arena{width:100%;height:auto;display:block;touch-action:manipulation}
+.zone{cursor:pointer}
+.zone rect{transition:opacity .15s,stroke .15s}
+.zone:hover rect{stroke:#fff;stroke-width:2.4}
+.zone.soldout{cursor:not-allowed}
+.zone.soldout rect{opacity:.24}
+.zlab{font-family:"Bai Jamjuree";font-weight:600;fill:#fff;text-anchor:middle;dominant-baseline:central;pointer-events:none}
+.side{position:sticky;top:82px}
+.legend{padding:16px 17px}
+.legend h4{font-size:14px;margin-bottom:12px;letter-spacing:.06em}
+.lrow{display:flex;align-items:center;gap:10px;padding:5px 0;font-size:13px;cursor:pointer;border-radius:7px}
+.lrow:hover{background:rgba(255,255,255,.04)}
+.lrow .sw{width:26px;height:14px;border-radius:4px;flex:none}
+.lrow .amt{margin-left:auto;font-family:"IBM Plex Mono";font-size:12.5px;color:var(--muted)}
+.lrow.dim{opacity:.32}
+
+/* seat picker */
+.seatwrap{overflow-x:auto;padding:20px 4px;background:#0D0A18;border-radius:12px;border:1px solid var(--line)}
+.stagebar{text-align:center;font-family:"Bai Jamjuree";font-weight:700;font-size:12px;letter-spacing:.34em;color:#0A0912;
+  background:#fff;border-radius:8px;padding:10px;margin:0 auto 26px;max-width:440px}
+.srow{display:flex;align-items:center;gap:4px;justify-content:center;margin-bottom:5px;white-space:nowrap}
+.srow .rl{width:22px;font-family:"IBM Plex Mono";font-size:11px;color:var(--dim);text-align:center;flex:none}
+.seat.free:hover{transform:scale(1.25)}
+.seat.sold{background:#2A2438;cursor:not-allowed}
+.seat.pick{box-shadow:0 0 0 2px var(--ink),0 0 0 4px #fff}
+.skey{display:flex;gap:16px;justify-content:center;margin-top:18px;font-size:12px;color:var(--muted);flex-wrap:wrap}
+.skey i{display:inline-block;vertical-align:-2px;margin-right:6px}
+
+/* cart */
+.cart{padding:17px}
+.cart h4{font-size:14px;letter-spacing:.06em;margin-bottom:13px}
+.citem{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px dashed var(--line);font-size:13.5px}
+.citem .dot{width:9px;height:9px;border-radius:3px;flex:none}
+.citem .x{margin-left:auto;background:none;border:0;color:var(--dim);cursor:pointer;font-size:16px;line-height:1}
+.citem .x:hover{color:var(--magenta)}
+.tot{display:flex;justify-content:space-between;font-size:13.5px;color:var(--muted);margin-top:12px}
+.tot.big{color:var(--text);font-size:19px;font-family:"Bai Jamjuree";font-weight:600;padding-top:11px;border-top:1px solid var(--line);margin-top:11px}
+.empty{color:var(--dim);font-size:13px;text-align:center;padding:22px 8px;line-height:1.7}
+
+/* ============ TICKET STUB ============ */
+.stub{position:relative;background:var(--panel-2);border:1px solid var(--line);border-radius:16px;overflow:hidden}
+.stub::before,.stub::after{content:"";position:absolute;width:22px;height:22px;border-radius:50%;background:var(--ink);
+  border:1px solid var(--line);left:-12px}
+.stub::before{top:calc(var(--perf,58%) - 11px)}
+.stub::after{top:calc(var(--perf,58%) - 11px);left:auto;right:-12px}
+.stub .perf{position:absolute;left:12px;right:12px;top:var(--perf,58%);border-top:2px dashed var(--line)}
+
+/* ============ PAYMENT ============ */
+.pay{display:grid;grid-template-columns:1fr 380px;gap:22px;align-items:start}
+.qrcard{padding:24px;text-align:center;background:linear-gradient(180deg,#1B1430,#120E20);border:1px solid var(--line);border-radius:16px}
+.pp-head{background:#0A3B7A;border-radius:12px 12px 0 0;margin:-24px -24px 0;padding:14px;
+  font-family:"Bai Jamjuree";letter-spacing:.3em;font-size:13px;font-weight:700}
+.qrbox{background:#fff;padding:14px;border-radius:12px;display:inline-block;margin:22px 0 6px;min-width:196px;min-height:196px}
+.qrbox img,.qrbox canvas{display:block;margin:0 auto}
+.timer{font-family:"IBM Plex Mono";font-size:15px;color:var(--gold)}
+.timer.hot{color:var(--magenta)}
+.steps{display:flex;gap:0;margin-bottom:26px;flex-wrap:wrap}
+.step{flex:1;min-width:120px;padding:11px 8px;text-align:center;font-size:12.5px;color:var(--dim);border-bottom:2px solid var(--line);position:relative}
+.step.on{color:var(--text);border-color:var(--violet)}
+.step.done{color:var(--mint);border-color:rgba(52,211,153,.5)}
+.step b{display:block;font-family:"IBM Plex Mono";font-size:10.5px;letter-spacing:.16em;opacity:.75;margin-bottom:3px}
+
+/* ============ ADMIN ============ */
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:14px;margin-bottom:22px}
+.kpi{padding:17px 18px}
+.kpi .k{font-size:11.5px;color:var(--dim);letter-spacing:.08em;text-transform:uppercase;font-family:"IBM Plex Mono"}
+.kpi .v{font-family:"Bai Jamjuree";font-size:27px;font-weight:600;margin:7px 0 3px}
+.kpi .d{font-size:12px;color:var(--mint)}
+.kpi .d.down{color:var(--magenta)}
+table{width:100%;border-collapse:collapse;font-size:13.5px}
+th{text-align:left;font-family:"IBM Plex Mono";font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;
+  color:var(--dim);font-weight:500;padding:11px 12px;border-bottom:1px solid var(--line);white-space:nowrap}
+td{padding:12px;border-bottom:1px solid rgba(44,36,68,.55);vertical-align:middle}
+tr:hover td{background:rgba(255,255,255,.025)}
+.tblwrap{overflow-x:auto}
+.bar{height:9px;border-radius:5px;background:var(--grad);min-width:3px}
+.avatar{width:30px;height:30px;border-radius:9px;display:inline-flex;align-items:center;justify-content:center;
+  font-family:"Bai Jamjuree";font-size:12px;font-weight:600;color:#fff;flex:none}
+.tabs{display:flex;gap:6px;margin-bottom:20px;flex-wrap:wrap}
+.tabs button{background:none;border:1px solid var(--line);color:var(--muted);padding:8px 15px;border-radius:9px;cursor:pointer;font-size:13.5px}
+.tabs button.on{color:var(--text);border-color:var(--violet);background:rgba(168,85,247,.13)}
+.toolbar{display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap;align-items:center}
+.toolbar input,.toolbar select{width:auto;min-width:180px;flex:1}
+
+/* toast */
+#toast{position:fixed;left:50%;bottom:28px;transform:translate(-50%,90px);z-index:200;background:var(--panel-2);
+  border:1px solid var(--line);border-radius:11px;padding:12px 20px;font-size:14px;transition:transform .3s;box-shadow:0 12px 40px rgba(0,0,0,.5)}
+#toast.show{transform:translate(-50%,0)}
+
+
+/* ============ AUTH CHIP ============ */
+.who{display:flex;align-items:center;gap:8px;padding:5px 11px 5px 6px;border-radius:999px;
+  background:rgba(255,255,255,.05);box-shadow:inset 0 0 0 1px var(--line);font-size:13px;margin-left:8px}
+.who small{display:block;font-size:10.5px;color:var(--dim);letter-spacing:.04em}
+nav.links button.cta{background:var(--grad);color:#fff;font-weight:600}
+nav.links button.cta:hover{filter:brightness(1.1);background:var(--grad)}
+
+/* ============ LOGIN ============ */
+.auth-wrap{display:grid;grid-template-columns:1fr 1fr;gap:34px;align-items:center;max-width:920px;margin:20px auto}
+.auth-card{padding:30px}
+.roletabs{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:22px}
+.roletabs button{padding:13px 10px;border-radius:11px;border:1px solid var(--line);background:transparent;
+  color:var(--muted);cursor:pointer;text-align:left;font-size:13.5px;line-height:1.4}
+.roletabs button b{display:block;font-family:"Bai Jamjuree";font-size:15px;font-weight:600;color:var(--text)}
+.roletabs button.on{border-color:var(--violet);background:rgba(168,85,247,.12)}
+.demo{background:#0F0C1A;border:1px dashed var(--line);border-radius:11px;padding:13px 15px;margin-top:18px;font-size:12.5px;color:var(--muted)}
+.demo b{color:var(--text)}
+.demo button{background:none;border:0;color:var(--violet);cursor:pointer;font-size:12.5px;padding:0;text-decoration:underline}
+.swap{text-align:center;margin-top:16px;font-size:13px;color:var(--muted)}
+.swap button{background:none;border:0;color:var(--violet);cursor:pointer;font-size:13px;text-decoration:underline}
+
+/* ============ COVER POSTER ============ */
+.cover{background:#07060C;border:1px solid #241E33;border-radius:16px;padding:9px;overflow:hidden}
+.cover-frame{border:1px solid rgba(255,255,255,.1);border-radius:11px;overflow:hidden;position:relative;background:#000}
+.cover-kicker{text-align:center;font-family:"IBM Plex Mono";font-size:9.5px;letter-spacing:.42em;color:#D8C9A8;padding:13px 0 8px}
+.cover-title{text-align:center;font-family:"Bai Jamjuree";font-weight:700;font-size:19px;line-height:1.25;
+  padding:0 16px 4px;background:linear-gradient(100deg,#F5C451,#EC4899 55%,#A855F7);
+  -webkit-background-clip:text;background-clip:text;color:transparent}
+.cover-art{display:block;width:100%;height:auto}
+.cover-strip{padding:11px 14px 14px;text-align:center;background:linear-gradient(0deg,#000,rgba(0,0,0,.2))}
+.cover-when{font-size:12.5px;color:#F1EDFA}
+.cover-where{font-size:11px;color:#8B82A8;margin-top:3px}
+
+/* ============ PRICING PANEL ============ */
+.pricing{background:#07060C;border:1px solid #241E33;border-radius:16px;padding:16px 18px 18px}
+.pricing h3{font-family:"Bai Jamjuree";font-size:19px;letter-spacing:.16em;text-align:center;margin-bottom:14px}
+.prow{display:flex;align-items:center;gap:11px;padding:4px 0;cursor:pointer;border-radius:7px}
+.prow:hover{background:rgba(255,255,255,.05)}
+.prow.dim{opacity:.3}
+.prow .pbar{width:40px;height:19px;border-radius:3px;flex:none}
+.prow b{font-family:"Bai Jamjuree";font-size:16px;font-weight:600;min-width:56px;text-align:right}
+.prow small{font-size:10px;color:var(--dim);letter-spacing:.08em}
+.prow .std{font-size:9.5px;color:var(--muted);letter-spacing:.14em;margin-left:auto}
+
+/* ============ CHAIR ============ */
+.seat{width:22px;height:20px;border-radius:7px 7px 4px 4px;border:0;cursor:pointer;flex:none;position:relative;
+  background:rgba(255,255,255,.1);transition:transform .1s;margin-top:5px}
+.seat::before{content:"";position:absolute;left:2px;right:2px;top:-5px;height:6px;border-radius:3px 3px 0 0;
+  background:inherit;filter:brightness(.62)}
+.seat.pick::after{content:"";position:absolute;inset:0;border-radius:7px 7px 4px 4px;background:rgba(255,255,255,.4)}
+.skey i{width:14px;height:13px;border-radius:5px 5px 3px 3px}
+@media(max-width:900px){.auth-wrap{grid-template-columns:1fr}}
+
+
+/* ============ SEAT MAP EDITOR ============ */
+.arena.edit .zone{cursor:grab}
+.arena.edit .zone:active{cursor:grabbing}
+.arena.edit .zone rect{transition:none}
+.zone.sel rect{filter:drop-shadow(0 0 6px rgba(255,255,255,.55))}
+.seat.mini{width:15px;height:14px;border-radius:5px 5px 3px 3px;margin-top:4px}
+.seat.mini::before{left:1.5px;right:1.5px;top:-4px;height:4px}
+.seat.mini.gap::before{display:none}
+.rl.rbtn{background:none;border:0;color:var(--dim);cursor:pointer;font-family:"IBM Plex Mono";font-size:11px}
+.rl.rbtn:hover{color:var(--violet)}
+.modes{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:12px}
+.modes button{padding:8px;border-radius:9px;border:1px solid var(--line);background:transparent;
+  color:var(--muted);cursor:pointer;font-size:12.5px}
+.modes button.on{border-color:var(--violet);background:rgba(168,85,247,.14);color:var(--text)}
+input[type=range]{padding:0;border:0;background:transparent;accent-color:var(--violet);height:26px}
+input[type=number]{font-family:"IBM Plex Mono"}
+.seat.blank{visibility:hidden;pointer-events:none}
+
+
+/* ============ PRICE ADMIN ============ */
+input.cswatch{width:44px;height:32px;padding:2px;border-radius:8px;background:#0F0C1A;cursor:pointer}
+label.chk{display:inline-flex;align-items:center;gap:7px;font-size:12.5px;color:var(--muted);cursor:pointer;white-space:nowrap}
+label.chk input{width:16px;height:16px;margin:0;flex:none;accent-color:var(--violet)}
+td input{padding:8px 10px;font-size:13.5px}
+
+/* ============ PAYMENT VERIFY / SLIP ============ */
+.notice{border-radius:10px;padding:11px 13px;font-size:12.5px;line-height:1.65;text-align:left}
+.notice.ok{background:rgba(52,211,153,.11);color:#9BE7C8;box-shadow:inset 0 0 0 1px rgba(52,211,153,.25)}
+.notice.wait{background:rgba(245,196,81,.11);color:#F0D89B;box-shadow:inset 0 0 0 1px rgba(245,196,81,.25)}
+.notice.bad{background:rgba(236,72,153,.11);color:#F5A8CE;box-shadow:inset 0 0 0 1px rgba(236,72,153,.28)}
+.notice small{color:inherit;opacity:.75}
+.spinner{width:46px;height:46px;margin:0 auto;border-radius:50%;
+  border:3px solid rgba(255,255,255,.12);border-top-color:var(--violet);animation:spin .9s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.dropzone{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:7px;text-align:center;
+  min-height:150px;border:1.5px dashed var(--line);border-radius:12px;background:#0F0C1A;cursor:pointer;padding:16px}
+.dropzone:hover{border-color:var(--violet)}
+.dropzone b{font-family:"Bai Jamjuree";font-size:15px}
+.dropzone span{font-size:12px;color:var(--dim)}
+.dropzone img{max-height:190px;max-width:100%;border-radius:9px}
+.sliprev{background:#0F0C1A;border:1px solid var(--line);border-radius:11px;overflow:hidden;margin-bottom:11px}
+.sliprev img{width:100%;max-height:210px;object-fit:contain;display:block;cursor:zoom-in;background:#fff}
+.slipfake{padding:18px 16px;text-align:center;background:linear-gradient(180deg,#12305C,#0F0C1A 55%)}
+.slipfake b{font-size:13px;letter-spacing:.04em}
+.slipfake .amt{font-family:"Bai Jamjuree";font-size:26px;font-weight:600;margin:8px 0 6px;color:var(--gold)}
+.slipfake div{font-size:12px;color:var(--muted)}
+.slipfake small{display:block;margin-top:10px;font-size:10.5px;color:var(--dim)}
+.slipmeta{display:grid;grid-template-columns:1fr 1fr;gap:7px 12px;font-size:12px}
+.slipmeta span{color:var(--dim);display:block;font-size:10.5px}
+.slipmeta b{font-weight:500}
+.slipmeta b.bad{color:var(--magenta)}
+.zoom{position:fixed;inset:0;z-index:300;background:rgba(5,4,9,.9);display:flex;align-items:center;justify-content:center;padding:30px;cursor:zoom-out}
+.zoom img{max-width:100%;max-height:100%;border-radius:12px;background:#fff}
+
+@media(max-width:900px){
+  .hero{grid-template-columns:1fr;gap:26px}
+  .hero .poster{max-width:300px}
+  .map-layout,.pay{grid-template-columns:1fr}
+  .side{position:static}
+}
+</style>
+</head>
+<body>
+
+<header class="nav"><div class="wrap"><div class="nav-in">
+  <div class="logo" onclick="go('home')">
+    <div class="logo-mark"></div><div class="logo-txt">TICKETPASS</div>
+  </div>
+  <nav class="links" id="nav"></nav>
+</div></div></header>
+
+<main><div class="wrap" id="view"></div></main>
+
+<div id="toast"></div>
+
+<script>
+/* ══════════════════════════════════════════════════════════
+   1. CONFIG
+   ══════════════════════════════════════════════════════════ */
+const CFG = {
+  promptpayId : '0812345678',              // เบอร์พร้อมเพย์ผู้ขาย (แก้ตรงนี้)
+  merchant    : 'TICKETPASS CO LTD',
+  city        : 'BANGKOK',
+  feeRate     : 0.03,                       // ค่าธรรมเนียม 3%
+  deliveryFee : 50,                         // ค่าจัดส่ง/ออกบัตร
+  maxSeats    : 4,                          // จองได้สูงสุดต่อคำสั่งซื้อ
+  holdMinutes : 10,                         // เวลาถือที่นั่ง
+  gatewayMode : 'random',                   // จำลองผลตรวจสอบอัตโนมัติ: success | fail | random
+  slipMaxMB   : 3
+};
+
+const TIERS = {
+  T7000:{price:7000,color:'#E8232A',label:'โซนพื้นราบหน้าเวที'},
+  T6500:{price:6500,color:'#F47B20',label:'อัฒจันทร์ชั้น 3 ข้างเวที'},
+  T5500:{price:5500,color:'#4FC3F7',label:'อัฒจันทร์ชั้น 3 ด้านข้าง'},
+  T5000:{price:5000,color:'#5CC46A',label:'อัฒจันทร์ชั้น 3 ด้านหลัง'},
+  T4000:{price:4000,color:'#F5D02E',label:'อัฒจันทร์ชั้น 4 กลาง'},
+  TSTD :{price:3500,color:'#C4202B',label:'ยืน (STANDING)',standing:true},
+  T3000:{price:3000,color:'#8E44AD',label:'อัฒจันทร์ชั้น 4 ด้านข้าง'},
+  T2000:{price:2000,color:'#7B1E23',label:'อัฒจันทร์ชั้น 4 ด้านบน'}
+};
+
+/* ══════════════════════════════════════════════════════════
+   2. SEEDED RANDOM  (ให้ผังที่นั่งคงที่ทุกครั้งที่เปิด)
+   ══════════════════════════════════════════════════════════ */
+let _s = 20260903;
+function rnd(){ _s = (_s*1664525 + 1013904223) % 4294967296; return _s/4294967296; }
+const pick = a => a[Math.floor(rnd()*a.length)];
+const ri  = (a,b) => a + Math.floor(rnd()*(b-a+1));
+
+/* ══════════════════════════════════════════════════════════
+   3. ผังสนาม  (bowl แบบอารีน่า + พื้นราบหน้าเวที)
+   ══════════════════════════════════════════════════════════ */
+const CX=390, CYC=360;
+
+/* ── บล็อกตรง: พื้นราบหน้าเวที + คอลัมน์ซ้าย/ขวา ─────────
+   [ id, tier, x, y, w, h ]                                */
+const BLOCKS = [
+  ['STL','TSTD', 248, 92,140,64], ['STR','TSTD', 392, 92,140,64],
+  ['A1','T7000', 248,170, 90,76], ['A2','T7000', 345,170, 90,76], ['A3','T7000', 442,170, 90,76],
+  ['B1','T7000', 248,254, 90,76], ['B2','T7000', 345,254, 90,76], ['B3','T7000', 442,254, 90,76],
+  ['B','T2000',   26, 92, 62,64], ['C','T6500',   26,170, 62,68],
+  ['D','T6500',   26,248, 62,68], ['E','T6500',   26,326, 62,68],
+  ['SB','T6500', 110, 92, 68,64], ['SC','T5500', 110,170, 68,68],
+  ['SD','T5500', 110,248, 68,68], ['SE','T5000', 110,326, 68,68],
+  ['SN','T6500', 602, 92, 68,64], ['SM','T5500', 602,170, 68,68],
+  ['SL','T5500', 602,248, 68,68], ['SK','T5000', 602,326, 68,68],
+  ['T','T2000',  692, 92, 62,64], ['S','T6500',  692,170, 62,68],
+  ['R','T6500',  692,248, 62,68], ['Q','T6500',  692,326, 62,68]
+];
+/* ── โค้งด้านล่าง: วางบนวงรี แล้วหมุนให้หันเข้าหาเวที ──── */
+const CURVE_OUT = [
+  ['F','T3000',165],['G','T3000',150],['H','T2000',135],['I','T2000',120],
+  ['J','T4000',105],['K','T4000', 90],['L','T4000', 75],['M','T2000', 60],
+  ['N','T2000', 45],['O','T3000', 30],['P','T3000', 15]
+];
+const CURVE_IN = [
+  ['SF','T5000',150],['SG','T5000',120],['SH','T5000',90],['SI','T5000',60],['SJ','T5000',30]
+];
+
+const ZONES = [];
+BLOCKS.forEach(([id,tier,x,y,w,h])=>
+  ZONES.push({id,tier,x,y,w,h,cx:x+w/2,cy:y+h/2,rot:0}));
+function curve(list, rx, ry, w, h){
+  list.forEach(([id,tier,deg])=>{
+    const r=deg*Math.PI/180, cx=CX+rx*Math.cos(r), cy=CYC+ry*Math.sin(r);
+    ZONES.push({id,tier,cx,cy,w,h,arcZone:true,
+      rot: Math.atan2(cy-CYC, cx-CX)*180/Math.PI + 90});
+  });
+}
+curve(CURVE_OUT, 350, 272, 70, 58);
+curve(CURVE_IN,  250, 205, 72, 56);
+
+/* ── สร้างที่นั่งในแต่ละโซน ─────────────────────────────── */
+const ROWS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
+ZONES.forEach(z=>{
+  const t = TIERS[z.tier];
+  if(t.standing){
+    z.standing = true;
+    z.capacity = 600;
+    z.sold = ri(180, 520);
+    return;
+  }
+  const isFloor = z.tier==='T7000';
+  z.rows  = isFloor ? 10 : (z.arcZone && z.tier!=='T2000' ? 8 : 9);
+  z.cols  = isFloor ? 18 : 14;
+  z.seats = {};
+  // อัตราการขาย: โซนดี/ราคาสูงขายเยอะกว่า
+  const heat = ({T7000:.72,T6500:.6,T5500:.5,T5000:.44,T4000:.33,T3000:.26,T2000:.18})[z.tier] ?? .3;
+  for(let r=0;r<z.rows;r++){
+    for(let c=1;c<=z.cols;c++){
+      const key = ROWS[r]+c;
+      z.seats[key] = rnd() < (heat + (z.rows-r)/z.rows*0.14) ? 'sold' : 'free';
+    }
+  }
+  recount(z);
+});
+const ZMAP = Object.fromEntries(ZONES.map(z=>[z.id,z]));
+
+/* ระดับราคาเรียงจากแพงไปถูก — ใช้ทุกที่ที่แสดงรายการราคา */
+const tierList = () => Object.entries(TIERS).sort((a,b)=>b[1].price-a[1].price);
+const TR = k => TIERS[k] || tierList()[0][1] || {price:0,color:'#6B6288',label:'—'};
+const avail = z => Math.max(0, z.capacity - z.sold);
+
+/* นับความจุ/ยอดขายใหม่จากผังจริง — 'none' = ไม่มีเก้าอี้ตรงนั้น */
+function recount(z){
+  if(z.standing || !z.seats) return;
+  const v = Object.values(z.seats);
+  z.capacity = v.filter(x=>x!=='none').length;
+  z.sold     = v.filter(x=>x==='sold'||x==='hold').length;
+}
+/* เปลี่ยนจำนวนแถว/ที่นั่งโดยเก็บสถานะเดิมไว้ */
+function resizeSeats(z, rows, cols){
+  rows=Math.max(1,Math.min(26,rows|0)); cols=Math.max(1,Math.min(40,cols|0));
+  const old=z.seats||{}, ns={};
+  for(let r=0;r<rows;r++) for(let c=1;c<=cols;c++){
+    const k=ROWS[r]+c; ns[k] = old[k] || 'free';
+  }
+  z.rows=rows; z.cols=cols; z.seats=ns; recount(z);
+}
+
+/* ══════════════════════════════════════════════════════════
+   4. อีเวนต์
+   ══════════════════════════════════════════════════════════ */
+const EVENTS = [
+  {id:'ev1', name:'FAREWELL CONCERT — บทเพลงสุดท้าย', artist:'The Legends',
+   kicker:'FAREWELL CONCERT', thai:'ขอบคุณ ที่รักกัน',
+   coverDate:'รอบแสดงวันที่ 3, 5, 6 กันยายน 2569',
+   venue:'อิมแพ็ค อารีน่า เมืองทองธานี', cat:'คอนเสิร์ต', hot:true,
+   rounds:[{d:'ศ 3 ก.ย. 2569',t:'19:00'},{d:'อา 5 ก.ย. 2569',t:'18:00'},{d:'จ 6 ก.ย. 2569',t:'19:00'}],
+   g:'linear-gradient(135deg,#7C2D93,#C2185B 55%,#F4511E)'},
+  {id:'ev2', name:'NEON BLOOM MUSIC FESTIVAL', artist:'40+ ศิลปิน 3 เวที',
+   kicker:'MUSIC FESTIVAL', thai:'นีออน บลูม เฟส', coverDate:'รอบแสดงวันที่ 12–13 กันยายน 2569',
+   venue:'ธันเดอร์โดม เมืองทองธานี', cat:'เทศกาลดนตรี',
+   rounds:[{d:'ส 12 ก.ย. 2569',t:'14:00'},{d:'อา 13 ก.ย. 2569',t:'14:00'}],
+   g:'linear-gradient(135deg,#0F766E,#0EA5E9 60%,#A855F7)'},
+  {id:'ev3', name:'MIDNIGHT SYMPHONY', artist:'RBSO x วงดนตรีร่วมสมัย',
+   kicker:'ORCHESTRA NIGHT', thai:'ราตรีนี้ ไม่มีวันจบ', coverDate:'รอบแสดงวันที่ 26 กันยายน 2569',
+   venue:'หอประชุมใหญ่ ศูนย์วัฒนธรรมฯ', cat:'คอนเสิร์ต',
+   rounds:[{d:'ส 26 ก.ย. 2569',t:'19:30'}],
+   g:'linear-gradient(135deg,#1E1B4B,#4338CA 60%,#F59E0B)'},
+  {id:'ev4', name:'FANMEET: FIRST LIGHT', artist:'LUNA',
+   kicker:'FAN MEETING', thai:'แสงแรก ของเรา', coverDate:'รอบแสดงวันที่ 4 ตุลาคม 2569',
+   venue:'พารากอน ฮอลล์', cat:'แฟนมีตติ้ง',
+   rounds:[{d:'อา 4 ต.ค. 2569',t:'16:00'}],
+   g:'linear-gradient(135deg,#BE185D,#F472B6 60%,#FDE68A)'}
+];
+
+/* ══════════════════════════════════════════════════════════
+   5. ข้อมูล CRM (ลูกค้า + คำสั่งซื้อจำลอง)
+   ══════════════════════════════════════════════════════════ */
+const FIRST=['ณัฐวุฒิ','ปาริชาต','กันตพงศ์','ศิริพร','ธนกฤต','อารียา','พิชญะ','เมธาวี','ชยพล','นภัสสร','วรินทร','ธีรภัทร','ศุภกร','กมลชนก','อภิสิทธิ์','จิราภรณ์','ณิชาภัทร','ปวริศ'];
+const LAST=['ศรีสุวรรณ','วงศ์อารีย์','ธนบดี','แสงทอง','อินทรีย์','พรหมมา','เจริญสุข','บุญมี','รัตนพงษ์','ชูเกียรติ','ทองดี','สายสุนีย์'];
+const CHAN=['เว็บไซต์','แอปมือถือ','LINE OA','พาร์ทเนอร์'];
+const SEG =['VIP','Loyal','Regular','New'];
+const ST = {PAID:'ชำระแล้ว', WAIT:'รอชำระ', REVIEW:'รอตรวจสอบสลิป', REJECT:'สลิปไม่ผ่าน', CANCEL:'ยกเลิก', REFUND:'คืนเงิน'};
+const STATUS=[ST.PAID,ST.WAIT,ST.REVIEW,ST.REJECT,ST.CANCEL,ST.REFUND];
+
+const customers=[], orders=[];
+for(let i=0;i<28;i++){
+  const name = pick(FIRST)+' '+pick(LAST);
+  customers.push({
+    id:'CU'+String(1001+i),
+    name,
+    phone:'0'+ri(6,9)+String(ri(10000000,99999999)),
+    email: 'user'+(101+i)+'@mail.com',
+    channel: pick(CHAN),
+    joined: '2569-0'+ri(1,8)+'-'+String(ri(10,28)),
+    orders:0, spend:0, seg:'New'
+  });
+}
+for(let i=0;i<64;i++){
+  const cu = customers[Math.floor(rnd()*customers.length)];
+  const ev = pick(EVENTS);
+  const z  = pick(ZONES.filter(x=>!TIERS[x.tier].standing));
+  const qty= ri(1,4);
+  const st = rnd()<.79 ? 'ชำระแล้ว' : pick(['รอชำระ','ยกเลิก','คืนเงิน']);
+  const sub= TIERS[z.tier].price*qty;
+  const tot= st==='ยกเลิก' ? 0 : Math.round(sub*(1+CFG.feeRate)+CFG.deliveryFee);
+  orders.push({
+    ref:'TP'+String(240100+i),
+    cust:cu.id, custName:cu.name, event:ev.name, eventId:ev.id,
+    zone:z.id, tier:z.tier, qty, total:tot, status:st,
+    channel:cu.channel,
+    date:'2569-0'+ri(6,8)+'-'+String(ri(10,28)).padStart(2,'0')
+  });
+  if(st==='ชำระแล้ว'){ cu.orders++; cu.spend+=tot; }
+}
+customers.forEach(c=>{
+  c.seg = c.spend>=45000?'VIP' : c.spend>=20000?'Loyal' : c.orders>0?'Regular':'New';
+});
+
+/* ให้บัญชีทดลอง user@demo.com มีประวัติของตัวเอง */
+orders.slice(0,4).forEach((o,i)=>{
+  o.custName='สมชาย ใจดี'; o.custEmail='user@demo.com';
+  o.status = i===0 ? ST.REVIEW : i===1 ? ST.WAIT : ST.PAID;
+});
+/* สลิปรอตรวจสอบจำลอง เพื่อให้แอดมินมีของให้ตรวจตั้งแต่เปิดระบบ */
+orders.filter(o=>o.status===ST.REVIEW).concat(orders.slice(6,9)).slice(0,4).forEach((o,i)=>{
+  o.status = ST.REVIEW;
+  o.slip = {
+    bank: ['ธนาคารกสิกรไทย','ธนาคารไทยพาณิชย์','ธนาคารกรุงเทพ','ธนาคารกรุงไทย'][i%4],
+    amount: i===2 ? o.total-100 : o.total,          // ใบที่ 3 ยอดไม่ตรง เพื่อให้เห็นการแจ้งเตือน
+    time: '2569-08-10 '+String(9+i).padStart(2,'0')+':'+String(12+i*7).padStart(2,'0'),
+    ref: 'TXN'+String(880420+i*37),
+    note: '',
+    img: null,
+    at: '2569-08-10'
+  };
+});
+
+
+/* ══════════════════════════════════════════════════════════
+   5.5 ระบบสมาชิก (admin / ผู้ซื้อบัตร)
+   ══════════════════════════════════════════════════════════ */
+const USERS = [
+  {email:'admin@ticketpass.co', pass:'admin1234', role:'admin', name:'ผู้ดูแลระบบ'},
+  {email:'user@demo.com',       pass:'user1234',  role:'user',  name:'สมชาย ใจดี', phone:'0812345678'}
+];
+const GUARD_USER  = ['orders','checkout','pay','ticket'];
+const GUARD_ADMIN = ['admin'];
+
+function login(){
+  const em = document.getElementById('l_email').value.trim().toLowerCase();
+  const pw = document.getElementById('l_pass').value;
+  const u  = USERS.find(x=>x.email.toLowerCase()===em);
+  if(!u || u.pass!==pw) return toast('อีเมลหรือรหัสผ่านไม่ถูกต้อง');
+  if(u.role!==S.loginRole)
+    return toast('บัญชีนี้เป็น'+(u.role==='admin'?'ผู้ดูแลระบบ':'ผู้ซื้อบัตร')+' กรุณาเลือกประเภทให้ตรง');
+  S.auth=u;
+  toast('ยินดีต้อนรับ '+u.name);
+  go(S.returnTo || (u.role==='admin' ? 'admin' : 'home'), {returnTo:null});
+}
+function register(){
+  const g=id=>document.getElementById(id).value.trim();
+  const name=g('r_name'), em=g('r_email').toLowerCase(), ph=g('r_phone'), pw=g('r_pass');
+  if(!name) return toast('กรอกชื่อ-นามสกุลก่อน');
+  if(!/^\S+@\S+\.\S+$/.test(em)) return toast('อีเมลไม่ถูกต้อง');
+  if(!/^0\d{8,9}$/.test(ph.replace(/\D/g,''))) return toast('เบอร์โทรศัพท์ไม่ถูกต้อง');
+  if(pw.length<6) return toast('รหัสผ่านต้องยาวอย่างน้อย 6 ตัวอักษร');
+  if(USERS.some(u=>u.email.toLowerCase()===em)) return toast('อีเมลนี้ถูกใช้แล้ว');
+  const u={email:em,pass:pw,role:'user',name,phone:ph};
+  USERS.push(u); S.auth=u;
+  toast('สมัครสมาชิกเรียบร้อย');
+  go(S.returnTo||'home',{returnTo:null});
+}
+function logout(){ S.auth=null; S.cart=[]; S.order=null; toast('ออกจากระบบแล้ว'); go('home'); }
+function fillDemo(role){
+  S.loginRole=role; S.loginMode='login'; render();
+  const u=USERS.find(x=>x.role===role);
+  document.getElementById('l_email').value=u.email;
+  document.getElementById('l_pass').value=u.pass;
+}
+function needLogin(target){
+  if(S.auth) return false;
+  S.returnTo=target; S.loginRole='user'; S.loginMode='login';
+  toast('กรุณาเข้าสู่ระบบก่อนทำรายการ');
+  go('login'); return true;
+}
+function gotoCheckout(){ if(needLogin('checkout')) return; go('checkout'); }
+
+/* ══════════════════════════════════════════════════════════
+   6. PROMPTPAY QR (EMVCo + CRC16-CCITT)
+   ══════════════════════════════════════════════════════════ */
+function crc16(str){
+  let crc=0xFFFF;
+  for(let i=0;i<str.length;i++){
+    crc ^= str.charCodeAt(i)<<8;
+    for(let j=0;j<8;j++) crc = (crc & 0x8000) ? ((crc<<1)^0x1021)&0xFFFF : (crc<<1)&0xFFFF;
+  }
+  return crc.toString(16).toUpperCase().padStart(4,'0');
+}
+const tlv=(id,v)=> id + String(v.length).padStart(2,'0') + v;
+
+function promptpayPayload(target, amount){
+  const d = String(target).replace(/\D/g,'');
+  let sub;
+  if(d.length===13)      sub = tlv('02', d);                       // เลขประจำตัวผู้เสียภาษี/บัตร ปชช.
+  else if(d.length===10) sub = tlv('01', '0066'+d.slice(1));       // เบอร์มือถือ
+  else                   sub = tlv('03', d);                       // e-Wallet
+  const merchantAcc = tlv('00','A000000677010111') + sub;
+  let p = tlv('00','01')
+        + tlv('01', amount ? '12' : '11')
+        + tlv('29', merchantAcc)
+        + tlv('53','764')
+        + (amount ? tlv('54', Number(amount).toFixed(2)) : '')
+        + tlv('58','TH')
+        + tlv('59', CFG.merchant.slice(0,25))
+        + tlv('60', CFG.city.slice(0,15))
+        + '6304';
+  return p + crc16(p);
+}
+
+function renderQR(el, text, size){
+  el.innerHTML='';
+  if(typeof QRCode==='undefined'){
+    el.innerHTML = '<div style="color:#111;font:11px/1.5 monospace;word-break:break-all;padding:8px;max-width:'+size+'px">'
+      + 'สร้างภาพ QR ไม่ได้ (ไม่มีการเชื่อมต่ออินเทอร์เน็ต)<br><br><b>Payload:</b><br>'+text+'</div>';
+    return;
+  }
+  new QRCode(el,{text, width:size, height:size, correctLevel:QRCode.CorrectLevel.M});
+}
+
+
+/* ══════════════════════════════════════════════════════════
+   6.5 ตรวจสอบการชำระเงิน · จองที่นั่ง · สลิป
+   ══════════════════════════════════════════════════════════ */
+/* จองที่นั่งไว้ (hold) / ตัดขาย (sold) / ปล่อยคืน (free) */
+function setSeatState(o, state){
+  (o.seats||[]).forEach(i=>{
+    const z=ZMAP[i.zone];
+    if(!z || z.standing || !z.seats) return;
+    if(z.seats[i.seat]!==undefined && z.seats[i.seat]!=='none') z.seats[i.seat]=state;
+  });
+  const want = state!=='free';
+  if(!!o._held !== want){
+    const cnt={};
+    (o.seats||[]).forEach(i=>{ const z=ZMAP[i.zone]; if(z&&z.standing) cnt[z.id]=(cnt[z.id]||0)+1; });
+    Object.entries(cnt).forEach(([id,n])=>{
+      const z=ZMAP[id];
+      z.sold = Math.max(0, Math.min(z.capacity, z.sold + (want?n:-n)));
+    });
+    o._held = want;
+  }
+  ZONES.forEach(recount);
+}
+
+/* บันทึกลูกค้าเข้า CRM ครั้งเดียวต่อคำสั่งซื้อ */
+function creditCustomer(o){
+  if(o._counted) return;
+  const phone=(o.customer&&o.customer.phone||'').replace(/\D/g,'');
+  let cu = (o.custEmail && customers.find(c=>c.email===o.custEmail))
+        || (phone && customers.find(c=>c.phone===phone))
+        || (o.cust && customers.find(c=>c.id===o.cust))
+        || customers.find(c=>c.name===o.custName);
+  if(!cu){
+    cu={id:'CU'+String(1001+customers.length),name:o.custName,phone:phone,
+        email:o.custEmail,channel:o.channel||'เว็บไซต์',joined:'2569-08-10',orders:0,spend:0,seg:'New'};
+    customers.push(cu);
+  }
+  o.cust=cu.id;
+  cu.orders++; cu.spend+=o.total;
+  cu.seg = cu.spend>=45000?'VIP':cu.spend>=20000?'Loyal':'Regular';
+  o._counted=true;
+}
+
+/* อนุมัติ: จากระบบอัตโนมัติ หรือจากแอดมินตรวจสลิป */
+function approveOrder(o, method, by){
+  o.status=ST.PAID;
+  o.verify={method, by, at:new Date().toLocaleString('th-TH')};
+  setSeatState(o,'sold');
+  creditCustomer(o);
+}
+function releaseOrder(o, status){
+  o.status=status;
+  setSeatState(o,'free');
+}
+
+/* ── ตรวจสอบอัตโนมัติผ่าน Payment Gateway (จำลอง) ─────── */
+function checkPayment(){
+  const o=S.order; if(!o) return;
+  S.payStep='checking'; render();
+  setTimeout(()=>{
+    if(!S.order) return;
+    const m=CFG.gatewayMode;
+    const found = m==='success' ? true : m==='fail' ? false : Math.random()<0.4;
+    if(found){
+      if(S.timer) clearInterval(S.timer);
+      approveOrder(o,'auto','Payment Gateway');
+      S.cart=[]; S.payStep='qr';
+      toast('พบรายการโอนเข้าแล้ว ยืนยันอัตโนมัติ');
+      go('ticket');
+    }else{
+      S.payStep='notfound'; render();
+    }
+  }, 1700);
+}
+
+/* ── แนบสลิป ──────────────────────────────────────────── */
+function readSlip(input){
+  const f=input.files && input.files[0]; if(!f) return;
+  if(!/^image\//.test(f.type)) { toast('แนบได้เฉพาะไฟล์รูปภาพ'); input.value=''; return; }
+  if(f.size > CFG.slipMaxMB*1024*1024){ toast('ไฟล์ใหญ่เกิน '+CFG.slipMaxMB+' MB'); input.value=''; return; }
+  const rd=new FileReader();
+  rd.onload=()=>{ S.slipImg=rd.result; S.slipName=f.name; render(); };
+  rd.readAsDataURL(f);
+}
+function submitSlip(){
+  const o=S.order; if(!o) return;
+  const g=id=>{const el=document.getElementById(id); return el?el.value.trim():'';};
+  if(!S.slipImg) return toast('แนบรูปสลิปก่อน');
+  const amt = +g('s_amount');
+  if(!amt) return toast('กรอกยอดเงินที่โอน');
+  if(!g('s_time')) return toast('กรอกวันเวลาที่โอน');
+  o.slip={ bank:g('s_bank'), amount:amt, time:g('s_time'), ref:g('s_ref'),
+           note:g('s_note'), img:S.slipImg, name:S.slipName, at:'2569-08-10' };
+  o.status=ST.REVIEW;
+  setSeatState(o,'hold');
+  if(S.timer) clearInterval(S.timer);
+  S.cart=[]; S.slipImg=null; S.slipName=null;
+  toast('ส่งสลิปให้แอดมินตรวจสอบแล้ว');
+  go('orders');
+}
+function startSlip(){ S.payStep='slip'; if(S.timer)clearInterval(S.timer); render(); }
+function backToQR(){ S.payStep='qr'; render(); }
+
+/* ── แอดมินตรวจสลิป ───────────────────────────────────── */
+function slipApprove(ref){
+  const o=orders.find(x=>x.ref===ref); if(!o) return;
+  approveOrder(o,'slip', S.auth?S.auth.name:'admin');
+  toast('ยืนยันสลิป '+ref+' แล้ว — ลูกค้าเห็นบัตรได้ทันที');
+  render();
+}
+function slipReject(ref){
+  const o=orders.find(x=>x.ref===ref); if(!o) return;
+  const el=document.getElementById('rj_'+ref);
+  o.rejectReason = (el && el.value.trim()) || 'ข้อมูลในสลิปไม่ตรงกับยอดที่ต้องชำระ';
+  releaseOrder(o, ST.REJECT);
+  toast('ปฏิเสธสลิป '+ref+' แล้ว — ที่นั่งถูกปล่อยคืน');
+  render();
+}
+const pendingSlips = () => orders.filter(o=>o.status===ST.REVIEW);
+
+/* ══════════════════════════════════════════════════════════
+   7. STATE
+   ══════════════════════════════════════════════════════════ */
+const S = {
+  view:'home', event:EVENTS[0], round:0, zone:null,
+  auth:null, loginRole:'user', loginMode:'login', returnTo:null,
+  sel:null, snap:5, seatMode:'exists',
+  payStep:'qr', slipImg:null, slipName:null, zoom:null,
+  cart:[], filterTier:null, customer:{},
+  order:null, adminTab:'dash', q:'', fstatus:'ทั้งหมด',
+  timer:null, left:CFG.holdMinutes*60
+};
+const baht = n => n.toLocaleString('th-TH');
+const esc = s => String(s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');
+function navItems(){
+  const it=[['home','หน้าแรก'],['events','งานแสดง']];
+  if(S.auth) it.push(['orders','คำสั่งซื้อ']);
+  if(S.auth && S.auth.role==='admin') it.push(['admin','CRM Admin']);
+  return it;
+}
+
+function go(v, opt={}){
+  S.view=v; Object.assign(S,opt);
+  if(v!=='pay'&&S.timer){clearInterval(S.timer);S.timer=null}
+  window.scrollTo({top:0,behavior:'instant'});
+  render();
+}
+function toast(msg){
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.classList.add('show');
+  clearTimeout(t._h); t._h=setTimeout(()=>t.classList.remove('show'),2400);
+}
+
+/* ── ยอดเงิน ───────────────────────────────────────────── */
+function totals(){
+  const sub = S.cart.reduce((s,i)=>s+i.price,0);
+  const fee = Math.round(sub*CFG.feeRate);
+  const del = S.cart.length ? CFG.deliveryFee : 0;
+  return {sub, fee, del, grand: sub+fee+del};
+}
+
+/* ══════════════════════════════════════════════════════════
+   8. VIEWS
+   ══════════════════════════════════════════════════════════ */
+function render(){
+  // ปิดกั้นหน้าที่ต้องล็อกอิน
+  if(GUARD_ADMIN.includes(S.view) && (!S.auth||S.auth.role!=='admin')){ S.returnTo='admin'; S.loginRole='admin'; S.view='login'; }
+  else if(GUARD_USER.includes(S.view) && !S.auth){ S.returnTo=S.view; S.loginRole='user'; S.view='login'; }
+
+  const a=S.auth, ac = a && a.role==='admin' ? '#F5C451' : '#A855F7';
+  document.getElementById('nav').innerHTML =
+    navItems().map(([k,l])=>`<button class="${S.view===k?'on':''}" onclick="go('${k}')">${l}</button>`).join('')
+    + (a
+      ? `<span class="who"><span class="avatar" style="background:${ac}33;color:${ac}">${a.name[0]}</span>
+           <span>${a.name}<small>${a.role==='admin'?'ผู้ดูแลระบบ':'ผู้ซื้อบัตร'}</small></span></span>
+         <button onclick="logout()">ออกจากระบบ</button>`
+      : `<button class="cta ${S.view==='login'?'on':''}" onclick="go('login')">เข้าสู่ระบบ</button>`);
+
+  const v=document.getElementById('view');
+  v.innerHTML = ({
+    home:vHome, events:vEvents, event:vEvent, seatmap:vSeatmap, zone:vZone, login:vLogin,
+    checkout:vCheckout, pay:vPay, ticket:vTicket, orders:vOrders, admin:vAdmin
+  }[S.view] || vHome)();
+  if(S.view==='pay') mountPay();
+  if(S.view==='ticket') mountTicket();
+  if(S.view==='admin' && S.adminTab==='map') mountMapEditor();
+}
+
+
+/* ── หน้าปกงาน (poster) ────────────────────────────────── */
+function coverPoster(ev){
+  const i = ev.id;
+  return `<div class="cover">
+    <div class="cover-frame">
+      <div class="cover-kicker">${ev.kicker||ev.cat}</div>
+      <div class="cover-title">${ev.thai||ev.name}</div>
+      <svg class="cover-art" viewBox="0 0 320 186" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <defs>
+          <radialGradient id="cg${i}" cx="50%" cy="26%" r="72%">
+            <stop offset="0" stop-color="#F5C451" stop-opacity=".85"/>
+            <stop offset=".45" stop-color="#EC4899" stop-opacity=".45"/>
+            <stop offset="1" stop-color="#0A0912" stop-opacity="0"/>
+          </radialGradient>
+          <linearGradient id="fl${i}" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stop-color="#000" stop-opacity=".1"/><stop offset="1" stop-color="#000"/>
+          </linearGradient>
+        </defs>
+        <rect width="320" height="186" fill="url(#cg${i})"/>
+        <g stroke="rgba(255,255,255,.14)" stroke-width="1">
+          ${Array.from({length:9},(_,k)=>`<line x1="${20+k*35}" y1="0" x2="${-40+k*46}" y2="186"/>`).join('')}
+        </g>
+        <g fill="#08070D">
+          <circle cx="112" cy="52" r="18"/>
+          <path d="M112 73c-23 0-35 16-37 37l-7 76h88l-7-76c-2-21-14-37-37-37z"/>
+          <rect x="139" y="66" width="11" height="50" rx="5.5" transform="rotate(32 144 91)"/>
+          <circle cx="163" cy="52" r="7"/>
+          <circle cx="216" cy="56" r="17"/>
+          <path d="M216 76c-22 0-33 15-35 35l-6 75h82l-6-75c-2-20-13-35-35-35z"/>
+          <ellipse cx="199" cy="133" rx="31" ry="24" transform="rotate(-20 199 133)"/>
+          <rect x="214" y="88" width="66" height="10" rx="5" transform="rotate(-20 214 93)"/>
+        </g>
+        <rect width="320" height="186" fill="url(#fl${i})" opacity=".55"/>
+      </svg>
+      <div class="cover-strip">
+        <div class="cover-when">${ev.coverDate||ev.rounds[0].d}</div>
+        <div class="cover-where">${ev.venue}</div>
+      </div>
+    </div>
+  </div>`;
+}
+
+/* ── แผงราคา PRICING ───────────────────────────────────── */
+function pricingPanel(){
+  return `<div class="pricing">
+    <h3>PRICING</h3>
+    ${tierList().map(([k,t])=>{
+      const av = ZONES.filter(z=>z.tier===k).reduce((n,z)=>n+avail(z),0);
+      return `<div class="prow ${S.filterTier&&S.filterTier!==k?'dim':''}" onclick="setFilter('${k}')"
+                title="เหลือ ${baht(av)} ที่">
+        ${t.standing?'<span class="std" style="margin:0 0 0 0">STANDING</span>':''}
+        <span class="pbar" style="background:${t.color}"></span>
+        <b>${baht(t.price)}</b><small>THB</small>
+        <span style="margin-left:auto;font-size:10.5px;color:var(--dim)">${baht(av)} ที่</span>
+      </div>`;}).join('')}
+    ${S.filterTier?`<button class="btn ghost sm" style="width:100%;margin-top:12px" onclick="setFilter(null)">แสดงทุกราคา</button>`
+                  :`<div style="font-size:10.5px;color:var(--dim);text-align:center;margin-top:10px">แตะที่ราคาเพื่อกรองโซน</div>`}
+  </div>`;
+}
+
+/* ── หน้าเข้าสู่ระบบ / สมัครสมาชิก ─────────────────────── */
+function vLogin(){
+  const isReg = S.loginMode==='register';
+  return `<div class="auth-wrap">
+    <div>
+      <div class="eyebrow">TICKETPASS ACCOUNT</div>
+      <h1 style="font-size:34px;line-height:1.15;margin:12px 0 14px">
+        ${isReg?'สมัครสมาชิก<br>เพื่อเริ่มจองบัตร':'เข้าสู่ระบบ<br>ก่อนเลือกที่นั่ง'}</h1>
+      <p style="color:var(--muted);font-size:15px;line-height:1.75;max-width:38ch">
+        บัญชีผู้ซื้อบัตรใช้จองที่นั่ง ชำระเงิน และดู e-Ticket
+        ส่วนบัญชีผู้ดูแลระบบเข้าถึงแดชบอร์ด CRM ยอดขาย ลูกค้า และสต็อกที่นั่ง</p>
+      <div style="margin-top:26px;max-width:300px">${coverPoster(EVENTS[0])}</div>
+    </div>
+    <div class="card auth-card">
+      <div class="roletabs">
+        <button class="${S.loginRole==='user'?'on':''}" onclick="go('login',{loginRole:'user'})">
+          <b>ผู้ซื้อบัตร</b>จองที่นั่ง · ชำระเงิน</button>
+        <button class="${S.loginRole==='admin'?'on':''}" onclick="go('login',{loginRole:'admin',loginMode:'login'})">
+          <b>ผู้ดูแลระบบ</b>แดชบอร์ด CRM</button>
+      </div>
+      ${isReg && S.loginRole==='user' ? `
+        <div class="field"><label class="f">ชื่อ-นามสกุล</label><input id="r_name" placeholder="ชื่อจริงตามบัตรประชาชน"></div>
+        <div class="field"><label class="f">อีเมล</label><input id="r_email" type="email" placeholder="you@mail.com"></div>
+        <div class="field"><label class="f">เบอร์โทรศัพท์</label><input id="r_phone" placeholder="08X-XXX-XXXX"></div>
+        <div class="field"><label class="f">รหัสผ่าน (อย่างน้อย 6 ตัว)</label><input id="r_pass" type="password" placeholder="••••••••"></div>
+        <button class="btn" style="width:100%" onclick="register()">สมัครสมาชิกและเข้าสู่ระบบ</button>
+        <div class="swap">มีบัญชีแล้ว? <button onclick="go('login',{loginMode:'login'})">เข้าสู่ระบบ</button></div>
+      ` : `
+        <div class="field"><label class="f">อีเมล</label>
+          <input id="l_email" type="email" placeholder="${S.loginRole==='admin'?'admin@ticketpass.co':'you@mail.com'}"></div>
+        <div class="field"><label class="f">รหัสผ่าน</label>
+          <input id="l_pass" type="password" placeholder="••••••••" onkeydown="if(event.key==='Enter')login()"></div>
+        <button class="btn" style="width:100%" onclick="login()">
+          เข้าสู่ระบบในฐานะ${S.loginRole==='admin'?'ผู้ดูแลระบบ':'ผู้ซื้อบัตร'}</button>
+        ${S.loginRole==='user'?`<div class="swap">ยังไม่มีบัญชี? <button onclick="go('login',{loginMode:'register'})">สมัครสมาชิก</button></div>`:''}
+        <div class="demo">
+          <b>บัญชีทดลอง</b><br>
+          ผู้ซื้อบัตร · user@demo.com / user1234 <button onclick="fillDemo('user')">กรอกให้</button><br>
+          ผู้ดูแลระบบ · admin@ticketpass.co / admin1234 <button onclick="fillDemo('admin')">กรอกให้</button>
+        </div>`}
+    </div>
+  </div>`;
+}
+
+/* ── หน้าแรก ───────────────────────────────────────────── */
+function vHome(){
+  const ev=EVENTS[0];
+  const soldTotal = orders.filter(o=>o.status==='ชำระแล้ว').reduce((s,o)=>s+o.qty,0);
+  return `
+  <section class="hero">
+    <div>
+      <div class="eyebrow">รอบสุดท้าย · 3 / 5 / 6 กันยายน 2569</div>
+      <h1>เลือกที่นั่งของคุณ<br><em>แล้วจ่ายด้วยพร้อมเพย์</em></h1>
+      <p>ผังที่นั่งจริงของอารีน่า ราคาแยกตามโซน จองเสร็จภายในสามนาที
+         สแกน QR พร้อมเพย์จากแอปธนาคารไหนก็ได้ แล้วรับ e-Ticket ทันที</p>
+      <div class="hero-cta">
+        <button class="btn" onclick="go('event',{event:EVENTS[0],round:0})">เลือกที่นั่ง ${ev.name.split('—')[0].trim()}</button>
+        <button class="btn ghost" onclick="go('events')">ดูงานทั้งหมด</button>
+      </div>
+      <div class="stats">
+        <div class="stat"><b>${ZONES.length}</b><span>โซนที่นั่ง</span></div>
+        <div class="stat"><b>${baht(ZONES.reduce((s,z)=>s+z.capacity,0))}</b><span>ที่นั่งทั้งหมด</span></div>
+        <div class="stat"><b>${baht(soldTotal)}</b><span>บัตรที่ขายแล้ว</span></div>
+        <div class="stat"><b>2,000–7,000</b><span>ช่วงราคา (บาท)</span></div>
+      </div>
+    </div>
+    <div>${coverPoster(ev)}</div>
+  </section>
+
+  <div class="sec-head"><h2 style="font-size:22px">งานที่กำลังเปิดขาย</h2>
+    <span style="color:var(--dim);font-size:13px">${EVENTS.length} งาน</span></div>
+  <div class="evgrid">${EVENTS.map(evCard).join('')}</div>`;
+}
+function evCard(ev){
+  const min = 2000, max = 7000;
+  return `<article class="card ev" onclick="go('event',{event:EVENTS.find(e=>e.id==='${ev.id}'),round:0})">
+    <div class="thumb"><div class="g" style="background:${ev.g};opacity:.75"></div>
+      ${ev.hot?'<span class="tag">ขายดี</span>':''}</div>
+    <div class="body">
+      <h4>${ev.name}</h4>
+      <div style="font-size:13px;color:var(--muted)">${ev.artist}</div>
+      <div class="l"><span>${ev.rounds[0].d}</span><span class="mono">฿${baht(min)}–${baht(max)}</span></div>
+      <div class="l" style="margin-top:4px"><span>${ev.venue}</span></div>
+    </div></article>`;
+}
+function vEvents(){
+  return `<div class="sec-head"><h2 style="font-size:24px">งานแสดงทั้งหมด</h2></div>
+  <div class="evgrid">${EVENTS.map(evCard).join('')}</div>`;
+}
+
+/* ── รายละเอียดงาน / เลือกรอบ ─────────────────────────── */
+function vEvent(){
+  const ev=S.event;
+  return `<div class="crumb" onclick="go('events')">← กลับไปหน้างานแสดง</div>
+  <div class="grid" style="grid-template-columns:340px 1fr;align-items:start">
+    <div>${coverPoster(ev)}</div>
+    <div>
+      <div class="eyebrow">${ev.cat}</div>
+      <h1 style="font-size:34px;margin:10px 0 8px;line-height:1.15">${ev.name}</h1>
+      <p style="color:var(--muted);font-size:15px;margin:0 0 24px">${ev.artist} · ${ev.venue}</p>
+
+      <h4 style="font-size:14px;letter-spacing:.06em;margin-bottom:12px">เลือกรอบการแสดง</h4>
+      <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(180px,1fr));margin-bottom:26px">
+        ${ev.rounds.map((r,i)=>`
+          <button onclick="go('event',{round:${i}})" class="card" style="padding:15px;text-align:left;cursor:pointer;
+            border-color:${S.round===i?'var(--violet)':'var(--line)'};background:${S.round===i?'rgba(168,85,247,.1)':'var(--panel)'}">
+            <div style="font-family:'Bai Jamjuree';font-weight:600;font-size:15px">${r.d}</div>
+            <div class="mono" style="font-size:12.5px;color:var(--muted);margin-top:4px">เริ่ม ${r.t} น. · ประตูเปิด ${(+r.t.split(':')[0]-1)}:00</div>
+          </button>`).join('')}
+      </div>
+
+      <h4 style="font-size:14px;letter-spacing:.06em;margin-bottom:12px">ราคาบัตร</h4>
+      <div class="card" style="padding:6px 16px;margin-bottom:26px">
+        ${tierList().map(([k,t])=>`
+          <div class="lrow" style="cursor:default">
+            <span class="sw" style="background:${t.color}"></span>
+            <span>${t.label}${t.standing?' — ไม่ระบุที่นั่ง':''}</span><span class="amt">${baht(t.price)} ฿</span>
+          </div>`).join('')}
+      </div>
+      <button class="btn" onclick="go('seatmap')">ไปเลือกที่นั่ง →</button>
+      <p style="color:var(--dim);font-size:12.5px;margin-top:14px">
+        จองได้สูงสุด ${CFG.maxSeats} ที่นั่งต่อคำสั่งซื้อ · ถือที่นั่งไว้ ${CFG.holdMinutes} นาทีหลังกดจ่าย</p>
+    </div>
+  </div>`;
+}
+
+/* ── ผังสนาม ───────────────────────────────────────────── */
+function vSeatmap(){
+  const r = S.event.rounds[S.round];
+  return `<div class="crumb" onclick="go('event')">← ${S.event.name}</div>
+  ${stepsHTML(1)}
+  <div class="sec-head">
+    <h2 style="font-size:22px">เลือกโซนที่นั่ง</h2>
+    <span style="color:var(--dim);font-size:13px">${r.d} · ${r.t} น. · ${S.event.venue}</span>
+  </div>
+  <div class="map-layout">
+    <div class="map-box">${arenaSVG()}</div>
+    <div class="side">
+      <div style="margin-bottom:14px">${coverPoster(S.event)}</div>
+      <div style="margin-bottom:14px">${pricingPanel()}</div>
+      ${cartHTML()}
+    </div>
+  </div>`;
+}
+function setFilter(t){ S.filterTier = (S.filterTier===t)?null:t; render(); }
+
+function arenaSVG(edit){
+  const parts = ZONES.map(z=>{
+    const t = TR(z.tier);
+    const av = avail(z);
+    const out = av<=0;
+    const dim = !edit && S.filterTier && S.filterTier!==z.tier;
+    const sel = edit && S.sel===z.id;
+    const hw = (z.w/2).toFixed(1), hh = (z.h/2).toFixed(1);
+    const rr = z.rot ? ` transform="rotate(${(+z.rot).toFixed(1)})"` : '';
+    const act = edit ? '' : (out ? '' : ` onclick="openZone('${z.id}')"`);
+    return `<g class="zone${out&&!edit?' soldout':''}${sel?' sel':''}" data-id="${z.id}"
+        transform="translate(${z.cx.toFixed(1)} ${z.cy.toFixed(1)})" opacity="${dim?.18:1}"${act}>
+      <title>โซน ${z.id} · ${baht(t.price)} ฿ · เหลือ ${av} ที่</title>
+      <rect x="-${hw}" y="-${hh}" width="${z.w}" height="${z.h}" rx="5" fill="${t.color}"
+        stroke="${sel?'#fff':'rgba(0,0,0,.45)'}" stroke-width="${sel?2.5:1}"${rr}/>
+      ${t.standing?`<rect x="-${hw}" y="-${hh}" width="${z.w}" height="${z.h}" rx="5" fill="url(#hatch)"${rr}/>`:''}
+      <text class="zlab" y="${t.standing?-5:0}" font-size="${z.w>=88?16:z.w>=68?14:12.5}">${z.id}</text>
+      ${t.standing?`<text class="zlab" y="11" font-size="8" opacity=".85" font-weight="400">STANDING</text>`:''}
+    </g>`;
+  }).join('');
+
+  return `<svg class="arena${edit?' edit':''}" ${edit?'id="editSvg"':''} viewBox="0 0 780 706"
+      xmlns="http://www.w3.org/2000/svg" role="img" aria-label="ผังที่นั่ง">
+    <defs>
+      <pattern id="hatch" width="7" height="7" patternTransform="rotate(45)" patternUnits="userSpaceOnUse">
+        <line x1="0" y1="0" x2="0" y2="7" stroke="rgba(255,255,255,.28)" stroke-width="2.4"/>
+      </pattern>
+      <pattern id="grid" width="20" height="20" patternUnits="userSpaceOnUse">
+        <circle cx="1" cy="1" r="1" fill="rgba(255,255,255,.09)"/>
+      </pattern>
+    </defs>
+    ${edit?'<rect width="780" height="706" fill="url(#grid)"/>':''}
+    <rect x="248" y="22" width="284" height="46" rx="6" fill="#fff"/>
+    <text x="390" y="45" text-anchor="middle" dominant-baseline="central"
+      font-family="Bai Jamjuree" font-weight="700" font-size="21" fill="#0A0912" letter-spacing="6">STAGE</text>
+    <text x="26"  y="82" fill="#8B82A8" font-size="11.5" font-family="IBM Plex Mono">Level 4</text>
+    <text x="112" y="82" fill="#8B82A8" font-size="11.5" font-family="IBM Plex Mono">Level 3</text>
+    <text x="602" y="82" fill="#8B82A8" font-size="11.5" font-family="IBM Plex Mono">Level 3</text>
+    <text x="692" y="82" fill="#8B82A8" font-size="11.5" font-family="IBM Plex Mono">Level 4</text>
+    ${parts}
+    <text x="390" y="694" text-anchor="middle" fill="#4E466B" font-size="11" font-family="IBM Plex Mono">${
+      edit ? 'ลากโซนเพื่อย้าย · แตะเพื่อเลือกและแก้ไขทางขวา'
+           : 'แตะที่โซนเพื่อดูเก้าอี้และเลือกที่นั่ง · โซนจางคือขายหมด'}</text>
+  </svg>`;
+}
+
+/* ── เลือกที่นั่งในโซน ─────────────────────────────────── */
+function openZone(id){ go('zone',{zone:ZMAP[id]}); }
+
+function vZone(){
+  const z=ZMAP[S.zone && S.zone.id] || S.zone;
+  if(!z) return vSeatmap();
+  S.zone=z;
+  const t=TR(z.tier);
+  if(t.standing) return vStanding();
+  if(!z.capacity) return `<div class="crumb" onclick="go('seatmap')">← กลับไปผังสนาม</div>
+    <div class="card" style="padding:40px;text-align:center;color:var(--muted)">โซนนี้ยังไม่มีเก้าอี้เปิดขาย</div>`;
+  const rows=[];
+  for(let r=0;r<z.rows;r++){
+    const cells=[];
+    for(let c=1;c<=z.cols;c++){
+      const key=ROWS[r]+c, st=z.seats[key];
+      if(st==='hold'){ cells.push(`<button class="seat sold" disabled title="แถว ${ROWS[r]} ที่ ${c} — กำลังถูกจอง"></button>`); if(c===Math.ceil(z.cols/2)) cells.push('<span style="width:14px;flex:none"></span>'); continue; }
+      if(st==='none'){ cells.push('<span class="seat blank"></span>'); if(c===Math.ceil(z.cols/2)) cells.push('<span style="width:14px;flex:none"></span>'); continue; }
+      const picked = S.cart.some(i=>i.zone===z.id&&i.seat===key);
+      const cls = st==='sold'?'sold':(picked?'free pick':'free');
+      cells.push(`<button class="seat ${cls}" ${st==='sold'?'disabled aria-label="ขายแล้ว"':`onclick="toggleSeat('${z.id}','${key}')"`}
+        title="แถว ${ROWS[r]} ที่ ${c}${st==='sold'?' — ขายแล้ว':''}"
+        style="${st==='sold'?'':'background:'+t.color+(picked?'':';opacity:.85')}"></button>`);
+      if(c===Math.ceil(z.cols/2)) cells.push('<span style="width:14px;flex:none"></span>');
+    }
+    const anySeat = Array.from({length:z.cols},(_,i)=>z.seats[ROWS[r]+(i+1)]).some(v=>v!=='none');
+    if(anySeat) rows.push(`<div class="srow"><span class="rl">${ROWS[r]}</span>${cells.join('')}<span class="rl">${ROWS[r]}</span></div>`);
+  }
+  return `<div class="crumb" onclick="go('seatmap')">← กลับไปผังสนาม</div>
+  ${stepsHTML(1)}
+  <div class="sec-head">
+    <h2 style="font-size:22px">โซน ${z.id}</h2>
+    <span class="pill" style="background:${t.color}22;color:${t.color}">${baht(t.price)} ฿ / ที่นั่ง</span>
+    <span style="color:var(--dim);font-size:13px">เหลือ ${baht(avail(z))} จาก ${baht(z.capacity)} ที่ · ${z.rows} แถว × ${z.cols} ที่</span>
+  </div>
+  <div class="map-layout">
+    <div>
+      <div class="seatwrap">
+        <div class="stagebar">STAGE · ทิศทางเวที</div>
+        ${rows.join('')}
+        <div class="skey">
+          <span><i style="background:${t.color};opacity:.85"></i>ว่าง — แตะเพื่อเลือก</span>
+          <span><i style="background:#2A2438"></i>ขายแล้ว / กำลังถูกจอง</span>
+          <span><i style="background:${t.color};box-shadow:0 0 0 2px var(--ink),0 0 0 4px #fff"></i>ที่คุณเลือก</span>
+        </div>
+      </div>
+      <div style="display:flex;gap:10px;margin-top:16px;flex-wrap:wrap;align-items:center">
+        <button class="btn" onclick="gotoCheckout()" ${S.cart.length?'':'disabled'}>
+          ${S.cart.length?`ชำระเงิน ${baht(totals().grand)} ฿ →`:'เลือกที่นั่งก่อน'}</button>
+        <button class="btn ghost" onclick="go('seatmap')">เลือกโซนอื่น</button>
+      </div>
+    </div>
+    <div class="side">
+      <div style="margin-bottom:14px">${pricingPanel()}</div>
+      ${cartHTML()}
+    </div>
+  </div>`;
+}
+function vStanding(){
+  const z=S.zone,t=TR(z.tier);
+  const inCart = S.cart.filter(i=>i.zone===z.id).length;
+  return `<div class="crumb" onclick="go('seatmap')">← กลับไปผังสนาม</div>
+  ${stepsHTML(1)}
+  <div class="sec-head"><h2 style="font-size:22px">โซน ${z.id} — ยืน</h2>
+    <span class="pill" style="background:${t.color}22;color:${t.color}">${baht(t.price)} ฿ / ใบ</span></div>
+  <div class="map-layout">
+    <div class="card" style="padding:30px;text-align:center">
+      <div style="font-size:15px;color:var(--muted);margin-bottom:8px">โซนยืนไม่ระบุที่นั่ง เข้าก่อนได้ยืนหน้าก่อน</div>
+      <div style="font-family:'Bai Jamjuree';font-size:36px;font-weight:600;margin:14px 0">${baht(avail(z))}</div>
+      <div style="color:var(--dim);font-size:13px;margin-bottom:26px">ใบที่เหลือจากทั้งหมด ${baht(z.capacity)} ใบ</div>
+      <div style="display:flex;gap:12px;justify-content:center;align-items:center">
+        <button class="btn ghost sm" onclick="stdQty(-1)">−</button>
+        <div style="font-family:'Bai Jamjuree';font-size:26px;min-width:48px">${inCart}</div>
+        <button class="btn ghost sm" onclick="stdQty(1)">+</button>
+      </div>
+      <p style="color:var(--dim);font-size:12.5px;margin-top:18px">สูงสุด ${CFG.maxSeats} ใบต่อคำสั่งซื้อ</p>
+      <button class="btn" style="margin-top:12px" onclick="gotoCheckout()" ${S.cart.length?'':'disabled'}>
+        ${S.cart.length?`ชำระเงิน ${baht(totals().grand)} ฿ →`:'เลือกจำนวนก่อน'}</button>
+    </div>
+    <div class="side">${cartHTML()}</div>
+  </div>`;
+}
+function stdQty(d){
+  const z=S.zone;
+  if(d>0){
+    if(S.cart.length>=CFG.maxSeats) return toast(`เลือกได้สูงสุด ${CFG.maxSeats} ใบต่อคำสั่งซื้อ`);
+    S.cart.push({zone:z.id,seat:'ยืน #'+(S.cart.filter(i=>i.zone===z.id).length+1),tier:z.tier,price:TR(z.tier).price});
+  }else{
+    const i = S.cart.map(x=>x.zone).lastIndexOf(z.id);
+    if(i>-1) S.cart.splice(i,1);
+  }
+  render();
+}
+function toggleSeat(zid,key){
+  const idx=S.cart.findIndex(i=>i.zone===zid&&i.seat===key);
+  if(idx>-1){ S.cart.splice(idx,1); render(); return; }
+  if(S.cart.length>=CFG.maxSeats) return toast(`เลือกได้สูงสุด ${CFG.maxSeats} ที่นั่งต่อคำสั่งซื้อ`);
+  S.cart.push({zone:zid,seat:key,tier:ZMAP[zid].tier,price:TR(ZMAP[zid].tier).price});
+  render();
+}
+function removeItem(i){ S.cart.splice(i,1); render(); }
+
+function cartHTML(){
+  const t=totals();
+  return `<div class="card cart">
+    <h4>ที่นั่งที่เลือก <span style="color:var(--dim);font-weight:400">(${S.cart.length}/${CFG.maxSeats})</span></h4>
+    ${S.cart.length? S.cart.map((i,n)=>`
+      <div class="citem">
+        <span class="dot" style="background:${TR(i.tier).color}"></span>
+        <span>โซน ${i.zone} · ${i.seat}</span>
+        <span class="mono" style="margin-left:auto;color:var(--muted)">${baht(i.price)}</span>
+        <button class="x" onclick="removeItem(${n})" aria-label="เอาออก">×</button>
+      </div>`).join('')
+    : '<div class="empty">ยังไม่ได้เลือกที่นั่ง<br>แตะโซนบนผังสนามเพื่อเริ่ม</div>'}
+    ${S.cart.length?`
+      <div class="tot"><span>ราคาบัตร</span><span class="mono">${baht(t.sub)} ฿</span></div>
+      <div class="tot"><span>ค่าธรรมเนียม ${CFG.feeRate*100}%</span><span class="mono">${baht(t.fee)} ฿</span></div>
+      <div class="tot"><span>ค่าออกบัตร</span><span class="mono">${baht(t.del)} ฿</span></div>
+      <div class="tot big"><span>รวม</span><span>${baht(t.grand)} ฿</span></div>
+      <button class="btn" style="width:100%;margin-top:15px" onclick="gotoCheckout()">${S.auth?'ยืนยันและชำระเงิน →':'เข้าสู่ระบบเพื่อชำระเงิน →'}</button>`:''}
+  </div>`;
+}
+function stepsHTML(n){
+  const st=[['01','เลือกที่นั่ง'],['02','ข้อมูลผู้จอง'],['03','ชำระเงิน'],['04','รับบัตร']];
+  return `<div class="steps">${st.map(([k,l],i)=>
+    `<div class="step ${i+1===n?'on':i+1<n?'done':''}"><b>${k}</b>${l}</div>`).join('')}</div>`;
+}
+
+/* ── ข้อมูลผู้จอง ──────────────────────────────────────── */
+function vCheckout(){
+  const t=totals();
+  if(S.auth && !S.customer.name){
+    S.customer = {name:S.auth.name, email:S.auth.email, phone:S.auth.phone||'', nid:'', channel:'เว็บไซต์'};
+  }
+  return `<div class="crumb" onclick="go('seatmap')">← กลับไปแก้ที่นั่ง</div>
+  ${stepsHTML(2)}
+  <div class="pay">
+    <div class="card" style="padding:24px">
+      <h3 style="font-size:19px;margin-bottom:6px">ข้อมูลผู้จอง</h3>
+      <p style="color:var(--muted);font-size:13.5px;margin:0 0 20px">เราจะส่ง e-Ticket ไปที่อีเมลและ SMS ของคุณ</p>
+      <div class="grid" style="grid-template-columns:1fr 1fr">
+        <div class="field"><label class="f">ชื่อ-นามสกุล</label><input id="c_name" placeholder="ชื่อจริงตามบัตรประชาชน" value="${S.customer.name||''}"></div>
+        <div class="field"><label class="f">เบอร์โทรศัพท์</label><input id="c_phone" placeholder="08X-XXX-XXXX" value="${S.customer.phone||''}"></div>
+      </div>
+      <div class="field"><label class="f">อีเมล</label><input id="c_email" type="email" placeholder="you@mail.com" value="${S.customer.email||''}"></div>
+      <div class="grid" style="grid-template-columns:1fr 1fr">
+        <div class="field"><label class="f">เลขบัตรประชาชน (สำหรับยืนยันหน้างาน)</label><input id="c_nid" placeholder="1-XXXX-XXXXX-XX-X" value="${S.customer.nid||''}"></div>
+        <div class="field"><label class="f">รู้จักงานนี้จากช่องทาง</label>
+          <select id="c_chan">${CHAN.map(c=>`<option ${S.customer.channel===c?'selected':''}>${c}</option>`).join('')}</select></div>
+      </div>
+      <div class="field"><label class="f">วิธีรับบัตร</label>
+        <select id="c_deliv">
+          <option>e-Ticket (QR ในอีเมล)</option>
+          <option>รับบัตรจริงหน้างาน</option>
+          <option>จัดส่งไปรษณีย์ EMS</option>
+        </select></div>
+      <label style="display:flex;gap:9px;align-items:flex-start;font-size:13px;color:var(--muted);margin:16px 0 22px;cursor:pointer">
+        <input type="checkbox" id="c_pdpa" style="width:16px;height:16px;margin-top:2px;flex:none">
+        <span>ยินยอมให้เก็บและใช้ข้อมูลตาม พ.ร.บ.คุ้มครองข้อมูลส่วนบุคคล และรับข่าวสารงานแสดงในอนาคต</span>
+      </label>
+      <button class="btn" style="width:100%" onclick="submitCheckout()">ไปหน้าชำระเงิน ${baht(t.grand)} ฿ →</button>
+    </div>
+    <div class="side">${summaryCard()}</div>
+  </div>`;
+}
+function summaryCard(){
+  const t=totals(), r=S.event.rounds[S.round];
+  return `<div class="card cart">
+    <h4>สรุปคำสั่งซื้อ</h4>
+    <div style="font-family:'Bai Jamjuree';font-size:15px;font-weight:600;margin-bottom:3px">${S.event.name}</div>
+    <div style="font-size:12.5px;color:var(--muted);margin-bottom:14px">${r.d} · ${r.t} น.<br>${S.event.venue}</div>
+    ${S.cart.map(i=>`<div class="citem"><span class="dot" style="background:${TR(i.tier).color}"></span>
+      <span>โซน ${i.zone} · ${i.seat}</span><span class="mono" style="margin-left:auto;color:var(--muted)">${baht(i.price)}</span></div>`).join('')}
+    <div class="tot"><span>ค่าธรรมเนียม</span><span class="mono">${baht(t.fee)} ฿</span></div>
+    <div class="tot"><span>ค่าออกบัตร</span><span class="mono">${baht(t.del)} ฿</span></div>
+    <div class="tot big"><span>ยอดชำระ</span><span>${baht(t.grand)} ฿</span></div>
+  </div>`;
+}
+function submitCheckout(){
+  const g=id=>document.getElementById(id).value.trim();
+  const c={name:g('c_name'),phone:g('c_phone'),email:g('c_email'),nid:g('c_nid'),
+           channel:g('c_chan'),deliv:g('c_deliv')};
+  if(!c.name)  return toast('กรอกชื่อ-นามสกุลก่อน');
+  if(!/^0\d{8,9}$/.test(c.phone.replace(/\D/g,''))) return toast('เบอร์โทรศัพท์ไม่ถูกต้อง');
+  if(!/^\S+@\S+\.\S+$/.test(c.email)) return toast('อีเมลไม่ถูกต้อง');
+  if(!document.getElementById('c_pdpa').checked) return toast('กรุณายอมรับเงื่อนไขการเก็บข้อมูล');
+  S.customer=c;
+  const t=totals();
+  const first=S.cart[0];
+  S.order={
+    ref:'TP'+Date.now().toString().slice(-8),
+    amount:t.grand, total:t.grand, sub:t.sub, fee:t.fee, del:t.del,
+    seats:[...S.cart], event:S.event.name, eventObj:S.event, eventId:S.event.id, round:S.event.rounds[S.round],
+    zone:first.zone, tier:first.tier, qty:S.cart.length,
+    customer:c, custName:c.name, custEmail:c.email, channel:c.channel,
+    status:ST.WAIT, date:'2569-08-10', createdAt:new Date()
+  };
+  orders.unshift(S.order);
+  setSeatState(S.order,'hold');      // กันคนอื่นจองซ้ำระหว่างรอชำระ
+  S.payStep='qr'; S.slipImg=null;
+  S.left=CFG.holdMinutes*60;
+  go('pay');
+}
+
+/* ── ชำระเงินด้วยพร้อมเพย์ ─────────────────────────────── */
+function vPay(){
+  const o=S.order; if(!o) return vHome();
+  if(o.status===ST.REVIEW) return vSlipSent();
+  return `${stepsHTML(3)}
+  <div class="pay">
+    <div class="qrcard">${
+      S.payStep==='checking' ? payChecking(o)
+      : S.payStep==='slip'   ? paySlipForm(o)
+      : payQR(o)}</div>
+    <div class="side">
+      ${summaryCard()}
+      <div class="card" style="padding:16px;margin-top:14px">
+        <h4 style="font-size:13px;letter-spacing:.06em;margin-bottom:10px">เลขที่คำสั่งซื้อ</h4>
+        <div class="mono" style="font-size:17px;color:var(--gold)">${o.ref}</div>
+        <p style="font-size:12.5px;color:var(--dim);margin:12px 0 0;line-height:1.7">
+          ที่นั่งถูกจองไว้ให้แล้ว โอนเสร็จกดตรวจสอบการชำระเงิน
+          ถ้าระบบยังไม่พบรายการ ให้แนบสลิปเพื่อให้แอดมินตรวจสอบแทน</p>
+      </div>
+    </div>
+  </div>`;
+}
+function payQR(o){
+  const nf = S.payStep==='notfound';
+  return `<div class="pp-head">THAI QR PAYMENT · PROMPTPAY</div>
+    <div style="margin-top:20px;font-size:13.5px;color:var(--muted)">สแกนด้วยแอปธนาคารใดก็ได้</div>
+    <div class="qrbox" id="qrbox"></div>
+    <div style="font-family:'Bai Jamjuree';font-size:30px;font-weight:600;margin:12px 0 2px">${baht(o.amount)} <span style="font-size:16px">฿</span></div>
+    <div class="mono" style="font-size:12.5px;color:var(--muted)">${CFG.merchant} · พร้อมเพย์ ${CFG.promptpayId.replace(/(\d{3})(\d{3})(\d{4})/,'$1-$2-$3')}</div>
+    <div style="margin:20px 0 4px" class="timer" id="tmr">เหลือเวลา 10:00</div>
+    ${nf?`<div class="notice bad">ยังไม่พบรายการโอนเข้าสำหรับยอด ${baht(o.amount)} ฿<br>
+        <small>ธนาคารบางแห่งอัปเดตช้าถึง 15 นาที ลองอีกครั้ง หรือแนบสลิปให้แอดมินตรวจสอบ</small></div>`
+       :`<div style="font-size:12px;color:var(--dim)">ยอดเงินถูกฝังใน QR แล้ว ไม่ต้องพิมพ์เอง</div>`}
+    <div style="display:flex;gap:10px;margin-top:20px;flex-wrap:wrap">
+      <button class="btn" style="flex:1;min-width:150px" onclick="checkPayment()">
+        ${nf?'ตรวจสอบอีกครั้ง':'ตรวจสอบการชำระเงิน'}</button>
+      <button class="btn ghost" style="flex:1;min-width:130px" onclick="startSlip()">แนบสลิปแทน</button>
+    </div>
+    <button class="btn ghost sm" style="width:100%;margin-top:10px" onclick="cancelPay()">ยกเลิกคำสั่งซื้อ</button>
+    <details style="margin-top:18px;text-align:left">
+      <summary style="cursor:pointer;font-size:12.5px;color:var(--dim)">ดู payload EMVCo ที่ใช้สร้าง QR</summary>
+      <div class="mono" id="ppText" style="font-size:10.5px;word-break:break-all;color:var(--muted);margin-top:9px;line-height:1.6"></div>
+    </details>`;
+}
+function payChecking(o){
+  return `<div class="pp-head">กำลังตรวจสอบรายการ</div>
+    <div style="padding:56px 10px 44px;text-align:center">
+      <div class="spinner"></div>
+      <div style="font-family:'Bai Jamjuree';font-size:18px;margin-top:22px">กำลังตรวจสอบยอดโอน ${baht(o.amount)} ฿</div>
+      <div style="font-size:13px;color:var(--muted);margin-top:8px">เทียบรายการเข้าบัญชีพร้อมเพย์ ${CFG.merchant}</div>
+    </div>`;
+}
+function paySlipForm(o){
+  return `<div class="pp-head" style="background:#4C1D95">แนบสลิปให้แอดมินตรวจสอบ</div>
+    <div style="text-align:left;padding-top:20px">
+      <p style="font-size:13px;color:var(--muted);margin:0 0 16px;line-height:1.7">
+        อัปโหลดสลิปโอนเงินยอด <b style="color:var(--gold)">${baht(o.amount)} ฿</b>
+        แอดมินจะตรวจสอบและยืนยันให้ ที่นั่งของคุณถูกจองไว้ระหว่างรอผล</p>
+      <label class="dropzone">
+        ${S.slipImg
+          ? `<img src="${S.slipImg}" alt="สลิปที่แนบ"><span>${S.slipName||'สลิป'} — แตะเพื่อเปลี่ยนรูป</span>`
+          : `<b>แตะเพื่อเลือกรูปสลิป</b><span>JPG หรือ PNG ไม่เกิน ${CFG.slipMaxMB} MB</span>`}
+        <input type="file" accept="image/*" style="display:none" onchange="readSlip(this)">
+      </label>
+      <div class="grid" style="grid-template-columns:1fr 1fr;gap:10px;margin-top:16px">
+        <div class="field" style="margin:0"><label class="f">ธนาคารที่โอน</label>
+          <select id="s_bank">${['ธนาคารกสิกรไทย','ธนาคารไทยพาณิชย์','ธนาคารกรุงเทพ','ธนาคารกรุงไทย','ธนาคารกรุงศรีอยุธยา','ธนาคารทหารไทยธนชาต','อื่นๆ'].map(b=>`<option>${b}</option>`).join('')}</select></div>
+        <div class="field" style="margin:0"><label class="f">ยอดที่โอน (บาท)</label>
+          <input id="s_amount" type="number" value="${o.amount}"></div>
+        <div class="field" style="margin:0"><label class="f">วันเวลาที่โอน</label>
+          <input id="s_time" placeholder="2569-08-10 14:32"></div>
+        <div class="field" style="margin:0"><label class="f">เลขอ้างอิง (ถ้ามี)</label>
+          <input id="s_ref" placeholder="TXN..."></div>
+        <div class="field" style="margin:0;grid-column:1/-1"><label class="f">หมายเหตุถึงแอดมิน</label>
+          <input id="s_note" placeholder="เช่น โอนจากบัญชีคุณแม่"></div>
+      </div>
+      <div style="display:flex;gap:10px;margin-top:18px">
+        <button class="btn" style="flex:1" onclick="submitSlip()">ส่งสลิปให้ตรวจสอบ</button>
+        <button class="btn ghost" onclick="backToQR()">ย้อนกลับ</button>
+      </div>
+    </div>`;
+}
+function vSlipSent(){
+  const o=S.order;
+  return `${stepsHTML(3)}
+  <div style="max-width:540px;margin:0 auto;text-align:center">
+    <div class="card" style="padding:36px 28px">
+      <div class="eyebrow">รอการตรวจสอบ</div>
+      <h1 style="font-size:26px;margin:12px 0 10px">ส่งสลิปเรียบร้อยแล้ว</h1>
+      <p style="color:var(--muted);font-size:14px;line-height:1.8;margin:0 0 22px">
+        แอดมินกำลังตรวจสอบสลิปของคำสั่งซื้อ
+        <span class="mono" style="color:var(--gold)">${o.ref}</span><br>
+        เมื่อยืนยันแล้ว e-Ticket จะปรากฏในหน้าคำสั่งซื้อของคุณทันที<br>
+        ที่นั่งถูกจองไว้ให้ระหว่างรอผล ไม่ต้องจองซ้ำ</p>
+      <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap">
+        <button class="btn" onclick="go('orders')">ไปหน้าคำสั่งซื้อ</button>
+        <button class="btn ghost" onclick="go('home')">กลับหน้าแรก</button>
+      </div>
+    </div>
+  </div>`;
+}
+function mountPay(){
+  const o=S.order; if(!o) return;
+  if(S.payStep!=='qr' && S.payStep!=='notfound') return;
+  const box=document.getElementById('qrbox'); if(!box) return;
+  const payload = promptpayPayload(CFG.promptpayId, o.amount);
+  renderQR(box, payload, 196);
+  const pt=document.getElementById('ppText'); if(pt) pt.textContent = payload;
+  const tick=()=>{
+    const el=document.getElementById('tmr'); if(!el){clearInterval(S.timer);return;}
+    S.left--;
+    if(S.left<=0){ clearInterval(S.timer); S.timer=null;
+      releaseOrder(S.order, ST.CANCEL);
+      toast('หมดเวลาถือที่นั่ง — ที่นั่งถูกปล่อยคืนแล้ว'); S.cart=[]; S.order=null; go('seatmap'); return; }
+    const m=String(Math.floor(S.left/60)).padStart(2,'0'), s=String(S.left%60).padStart(2,'0');
+    el.textContent=`เหลือเวลา ${m}:${s}`;
+    el.classList.toggle('hot', S.left<120);
+  };
+  if(S.timer) clearInterval(S.timer);
+  S.timer=setInterval(tick,1000); tick();
+}
+function cancelPay(){
+  if(S.timer)clearInterval(S.timer);
+  if(S.order) releaseOrder(S.order, ST.CANCEL);
+  S.order=null; toast('ยกเลิกคำสั่งซื้อแล้ว'); go('seatmap');
+}
+
+/* ── e-Ticket ──────────────────────────────────────────── */
+function vTicket(){
+  const o=S.order; if(!o) return vHome();
+  if(o.status!==ST.PAID) return `<div style="max-width:520px;margin:0 auto" class="card">
+    <div style="padding:40px 28px;text-align:center">
+      <h2 style="font-size:22px;margin-bottom:10px">ยังออกบัตรไม่ได้</h2>
+      <p style="color:var(--muted);font-size:14px;line-height:1.8">คำสั่งซื้อ
+        <span class="mono" style="color:var(--gold)">${o.ref}</span> อยู่ในสถานะ ${o.status}<br>
+        e-Ticket จะออกให้อัตโนมัติเมื่อยืนยันการชำระเงินแล้ว</p>
+      <button class="btn ghost" style="margin-top:20px" onclick="go('orders')">กลับไปหน้าคำสั่งซื้อ</button>
+    </div></div>`;
+  return `${stepsHTML(4)}
+  <div style="max-width:560px;margin:0 auto">
+    <div style="text-align:center;margin-bottom:26px">
+      <div class="eyebrow">ชำระเงินสำเร็จ</div>
+      <h1 style="font-size:30px;margin:10px 0 6px">บัตรของคุณพร้อมแล้ว</h1>
+      <p style="color:var(--muted);font-size:14px;margin:0">ส่งสำเนาไปที่ ${o.customer.email||'อีเมลของคุณ'} แล้ว${
+                o.verify?` · ยืนยันโดย${o.verify.method==='auto'?'ระบบอัตโนมัติ':'แอดมิน'}`:''}</p>
+    </div>
+    <div class="stub" style="--perf:62%">
+      <div style="padding:26px 26px 20px;background:${(o.eventObj||o.event).g};position:relative">
+        <div style="position:absolute;inset:0;background:rgba(10,9,18,.4)"></div>
+        <div style="position:relative">
+          <div class="mono" style="font-size:11px;letter-spacing:.2em;opacity:.85">ADMIT ${o.seats.length}</div>
+          <h3 style="font-size:22px;margin:8px 0 6px;line-height:1.2">${(o.eventObj||o.event).name}</h3>
+          <div style="font-size:13px;opacity:.9">${(o.eventObj||o.event).artist}</div>
+        </div>
+      </div>
+      <div style="padding:22px 26px">
+        <div class="grid" style="grid-template-columns:1fr 1fr;gap:14px">
+          <div><div class="f" style="font-size:11px;color:var(--dim)">วันที่</div><div style="font-size:14.5px">${o.round.d}</div></div>
+          <div><div class="f" style="font-size:11px;color:var(--dim)">เวลา</div><div style="font-size:14.5px">${o.round.t} น.</div></div>
+          <div style="grid-column:1/-1"><div class="f" style="font-size:11px;color:var(--dim)">สถานที่</div><div style="font-size:14.5px">${(o.eventObj||o.event).venue}</div></div>
+          <div style="grid-column:1/-1"><div class="f" style="font-size:11px;color:var(--dim)">ที่นั่ง</div>
+            <div style="font-size:14.5px">${o.seats.map(s=>`โซน ${s.zone} · ${s.seat}`).join(' / ')}</div></div>
+          <div><div class="f" style="font-size:11px;color:var(--dim)">ผู้ถือบัตร</div><div style="font-size:14.5px">${o.customer.name}</div></div>
+          <div><div class="f" style="font-size:11px;color:var(--dim)">ยอดชำระ</div><div style="font-size:14.5px">${baht(o.amount)} ฿</div></div>
+        </div>
+      </div>
+      <div class="perf"></div>
+      <div style="padding:26px;display:flex;gap:20px;align-items:center">
+        <div style="background:#fff;padding:9px;border-radius:9px" id="tqr"></div>
+        <div>
+          <div class="f" style="font-size:11px;color:var(--dim)">เลขที่บัตร</div>
+          <div class="mono" style="font-size:19px;color:var(--gold);margin-bottom:8px">${o.ref}</div>
+          <div style="font-size:12px;color:var(--muted);line-height:1.6">แสดง QR นี้ที่จุดตรวจบัตร<br>พร้อมบัตรประชาชนของผู้จอง</div>
+        </div>
+      </div>
+    </div>
+    <div style="display:flex;gap:12px;margin-top:22px">
+      <button class="btn" style="flex:1" onclick="window.print()">บันทึก / พิมพ์บัตร</button>
+      <button class="btn ghost" onclick="go('orders')">ดูคำสั่งซื้อทั้งหมด</button>
+    </div>
+  </div>`;
+}
+function mountTicket(){
+  if(!S.order) return;
+  const el=document.getElementById('tqr'); if(!el) return;
+  renderQR(el, 'TICKETPASS|'+S.order.ref+'|'+(S.order.customer.phone||''), 104);
+}
+
+/* ── คำสั่งซื้อของฉัน ───────────────────────────────────── */
+function vOrders(){
+  const me=S.auth.email;
+  const mine = orders.filter(o=>o.custEmail===me);
+  return `<div class="sec-head"><h2 style="font-size:24px">คำสั่งซื้อของฉัน</h2>
+    <span style="color:var(--dim);font-size:13px">${mine.length} รายการ</span></div>
+  ${mine.length? `<div class="grid" style="gap:14px">${mine.map(orderCard).join('')}</div>`
+   : `<div class="card" style="padding:44px;text-align:center;color:var(--muted)">
+        ยังไม่มีคำสั่งซื้อ<br><button class="btn" style="margin-top:18px" onclick="go('events')">เลือกงานที่สนใจ</button></div>`}`;
+}
+function orderCard(o){
+  const t=TR(o.tier);
+  const ev=EVENTS.find(e=>e.id===o.eventId);
+  return `<div class="card" style="padding:18px 20px">
+    <div style="display:flex;gap:14px;align-items:flex-start;flex-wrap:wrap">
+      <div style="flex:1;min-width:210px">
+        <div class="mono" style="font-size:12px;color:var(--gold)">${o.ref}</div>
+        <div style="font-family:'Bai Jamjuree';font-size:16px;font-weight:600;margin:4px 0 6px">${o.event||(ev&&ev.name)||''}</div>
+        <div style="font-size:12.5px;color:var(--muted)">
+          <span class="pill" style="background:${t.color}22;color:${t.color}">โซน ${o.zone}</span>
+          &nbsp;${o.qty} ใบ · ${baht(o.total)} ฿ · สั่งเมื่อ ${o.date}</div>
+      </div>
+      <div style="text-align:right">
+        ${statusPill(o.status)}
+        <div style="margin-top:10px">${orderAction(o)}</div>
+      </div>
+    </div>
+    ${o.status===ST.REVIEW?`<div class="notice wait" style="margin-top:14px">
+       แนบสลิปแล้ว รอแอดมินตรวจสอบ — ที่นั่งถูกจองไว้ให้ระหว่างรอผล</div>`:''}
+    ${o.status===ST.REJECT?`<div class="notice bad" style="margin-top:14px">
+       สลิปไม่ผ่านการตรวจสอบ: ${o.rejectReason||'ข้อมูลไม่ตรงกับยอดที่ต้องชำระ'}<br>
+       <small>ที่นั่งถูกปล่อยคืนแล้ว กรุณาจองใหม่หากต้องการ</small></div>`:''}
+    ${o.status===ST.PAID&&o.verify?`<div class="notice ok" style="margin-top:14px">
+       ยืนยันการชำระเงินแล้ว (${o.verify.method==='auto'?'ตรวจสอบอัตโนมัติ':'แอดมินตรวจสอบสลิป'}) · ${o.verify.at}</div>`:''}
+  </div>`;
+}
+function orderAction(o){
+  if(o.status===ST.PAID)   return `<button class="btn sm" onclick="openTicket('${o.ref}')">ดู e-Ticket</button>`;
+  if(o.status===ST.WAIT)   return `<button class="btn sm" onclick="resumePay('${o.ref}')">ชำระเงิน</button>`;
+  if(o.status===ST.REJECT) return `<button class="btn ghost sm" onclick="resumePay('${o.ref}')">แนบสลิปใหม่</button>`;
+  if(o.status===ST.REVIEW) return `<span style="font-size:12px;color:var(--gold)">รอผลตรวจสอบ</span>`;
+  return `<span style="font-size:12px;color:var(--dim)">—</span>`;
+}
+/* เติมข้อมูลให้คำสั่งซื้อเก่าที่ seed มา ให้เปิดบัตรได้ */
+function hydrate(o){
+  if(!o.event || typeof o.event==='string'){
+    const ev=EVENTS.find(e=>e.id===o.eventId)||EVENTS[0];
+    o.eventObj=ev; o.round=o.round||ev.rounds[0];
+  } else o.eventObj=o.event;
+  if(!o.seats||!o.seats.length){
+    const t=TR(o.tier);
+    o.seats=Array.from({length:o.qty},(_,i)=>({zone:o.zone,seat:'A'+(i+1),tier:o.tier,price:t.price}));
+  }
+  o.customer=o.customer||{name:o.custName,email:o.custEmail||'',phone:''};
+  o.amount=o.amount||o.total;
+  return o;
+}
+function openTicket(ref){
+  const o=orders.find(x=>x.ref===ref); if(!o) return;
+  S.order=hydrate(o); go('ticket');
+}
+function resumePay(ref){
+  const o=orders.find(x=>x.ref===ref); if(!o) return;
+  S.order=hydrate(o);
+  const retry = o.status===ST.REJECT;
+  if(retry){ o.status=ST.WAIT; setSeatState(o,'hold'); }
+  S.payStep = retry ? 'slip' : 'qr';
+  S.left=CFG.holdMinutes*60; S.slipImg=null;
+  go('pay');
+}
+const statusPill = s => `<span class="pill ${s===ST.PAID?'ok':(s===ST.WAIT||s===ST.REVIEW)?'wait':'no'}">${s}</span>`;
+
+
+/* ══════════════════════════════════════════════════════════
+   9.5 โหมดออกแบบผังที่นั่ง (เฉพาะผู้ดูแลระบบ)
+   ══════════════════════════════════════════════════════════ */
+const DEFAULT_LAYOUT = JSON.parse(JSON.stringify(ZONES));
+
+function applyLayout(arr){
+  ZONES.length = 0;
+  Object.keys(ZMAP).forEach(k=>delete ZMAP[k]);
+  arr.forEach(o=>{
+    const z = {...o};
+    if(o.seats) z.seats = {...o.seats};
+    recount(z);
+    ZONES.push(z); ZMAP[z.id]=z;
+  });
+  S.sel = ZONES.length ? ZONES[0].id : null;
+  S.cart = [];
+}
+function newZoneId(){ let n=1; while(ZMAP['Z'+n]) n++; return 'Z'+n; }
+
+function addZone(){
+  const z={id:newZoneId(),tier:'T5000',cx:390,cy:470,w:96,h:70,rot:0};
+  resizeSeats(z,5,8);
+  ZONES.push(z); ZMAP[z.id]=z; S.sel=z.id;
+  toast('เพิ่มโซน '+z.id+' แล้ว — ลากไปวางตำแหน่งที่ต้องการ');
+  render();
+}
+function dupZone(){
+  const z=ZMAP[S.sel]; if(!z) return toast('เลือกโซนก่อน');
+  const n={...z, id:newZoneId(), cx:Math.min(760,z.cx+z.w+10), seats:z.seats?{...z.seats}:undefined};
+  recount(n); ZONES.push(n); ZMAP[n.id]=n; S.sel=n.id; render();
+}
+function delZone(){
+  const z=ZMAP[S.sel]; if(!z) return toast('เลือกโซนก่อน');
+  ZONES.splice(ZONES.indexOf(z),1); delete ZMAP[z.id];
+  S.cart = S.cart.filter(i=>i.zone!==z.id);
+  S.sel = ZONES.length?ZONES[0].id:null;
+  toast('ลบโซน '+z.id+' แล้ว'); render();
+}
+function rotLive(v){
+  const z=ZMAP[S.sel]; if(!z) return;
+  z.rot=v;
+  const r=document.querySelector('.zone.sel rect');
+  if(r) r.setAttribute('transform','rotate('+v+')');
+}
+function setZ(key,val){
+  const z=ZMAP[S.sel]; if(!z) return;
+  if(key==='id'){
+    const nid=String(val).trim().toUpperCase().slice(0,6);
+    if(!nid) return toast('ชื่อโซนว่างไม่ได้');
+    if(nid!==z.id && ZMAP[nid]) return toast('มีโซนชื่อ '+nid+' อยู่แล้ว');
+    delete ZMAP[z.id]; S.cart.forEach(i=>{ if(i.zone===z.id) i.zone=nid; });
+    z.id=nid; ZMAP[nid]=z; S.sel=nid;
+  }
+  else if(key==='tier'){
+    z.tier=val;
+    if(TR(val).standing){ z.standing=true; z.capacity=z.capacity||300; z.sold=Math.min(z.sold||0,z.capacity); delete z.seats; }
+    else { if(z.standing){ delete z.standing; resizeSeats(z, z.rows||5, z.cols||8); } }
+    S.cart.forEach(i=>{ if(i.zone===z.id){ i.tier=val; i.price=TR(val).price; } });
+  }
+  else if(key==='rows') resizeSeats(z, val, z.cols);
+  else if(key==='cols') resizeSeats(z, z.rows, val);
+  else if(key==='capacity'){ z.capacity=Math.max(1,val|0); z.sold=Math.min(z.sold,z.capacity); }
+  else z[key]=val;
+  render();
+}
+/* แก้เก้าอี้ทีละตัว */
+function editSeat(key){
+  const z=ZMAP[S.sel]; if(!z||!z.seats) return;
+  const cur=z.seats[key];
+  z.seats[key] = S.seatMode==='exists'
+    ? (cur==='none' ? 'free' : 'none')
+    : (cur==='sold' ? 'free' : cur==='none' ? 'none' : 'sold');
+  recount(z); render();
+}
+function fillRow(r, val){
+  const z=ZMAP[S.sel]; if(!z||!z.seats) return;
+  for(let c=1;c<=z.cols;c++) z.seats[ROWS[r]+c]=val;
+  recount(z); render();
+}
+function fillZone(val){
+  const z=ZMAP[S.sel]; if(!z||!z.seats) return;
+  Object.keys(z.seats).forEach(k=>z.seats[k]=val);
+  recount(z); render();
+}
+function clearLayout(){
+  applyLayout([]); toast('ล้างผังแล้ว — กด “เพิ่มโซน” เพื่อเริ่มวางเอง'); render();
+}
+function resetLayout(){
+  applyLayout(DEFAULT_LAYOUT); toast('คืนค่าผังเริ่มต้นแล้ว'); render();
+}
+function exportLayout(){
+  const data={ version:2, venue:S.event.venue, savedAt:new Date().toISOString(), tiers:JSON.parse(JSON.stringify(TIERS)),
+    zones: ZONES.map(z=>({id:z.id,tier:z.tier,cx:+z.cx.toFixed(1),cy:+z.cy.toFixed(1),
+      w:z.w,h:z.h,rot:+(z.rot||0).toFixed(1),standing:!!z.standing,
+      rows:z.rows,cols:z.cols,capacity:z.capacity,sold:z.sold,seats:z.seats})) };
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([JSON.stringify(data,null,1)],{type:'application/json'}));
+  a.download='seatmap-layout.json'; a.click();
+  toast('ส่งออกผัง '+ZONES.length+' โซนแล้ว');
+}
+function importLayout(input){
+  const f=input.files && input.files[0]; if(!f) return;
+  const rd=new FileReader();
+  rd.onload=()=>{
+    try{
+      const d=JSON.parse(rd.result);
+      if(!d.zones||!d.zones.length) throw 0;
+      if(d.tiers && Object.keys(d.tiers).length){
+        Object.keys(TIERS).forEach(k=>delete TIERS[k]);
+        Object.entries(d.tiers).forEach(([k,v])=>TIERS[k]={...v});
+      }
+      applyLayout(d.zones);
+      ZONES.forEach(z=>{ if(!TIERS[z.tier]) z.tier=Object.keys(TIERS)[0]; });
+      toast('นำเข้าผัง '+d.zones.length+' โซนแล้ว'); render();
+    }catch(e){ toast('ไฟล์ผังไม่ถูกต้อง'); }
+  };
+  rd.readAsText(f); input.value='';
+}
+
+/* ── หน้าจอแท็บ “ออกแบบผัง” ─────────────────────────────── */
+function aMap(){
+  const z = ZMAP[S.sel];
+  return `<div class="toolbar">
+    <button class="btn sm" onclick="addZone()">+ เพิ่มโซน</button>
+    <button class="btn ghost sm" onclick="dupZone()">ทำสำเนา</button>
+    <button class="btn ghost sm" onclick="delZone()">ลบโซน</button>
+    <select onchange="go('admin',{snap:+this.value})" title="สแนปกริด" style="min-width:130px">
+      ${[[1,'ไม่สแนป'],[5,'สแนป 5 px'],[10,'สแนป 10 px'],[20,'สแนป 20 px']].map(([v,l])=>
+        `<option value="${v}" ${S.snap===v?'selected':''}>${l}</option>`).join('')}
+    </select>
+    <button class="btn ghost sm" onclick="exportLayout()">ส่งออกผัง JSON</button>
+    <label class="btn ghost sm" style="cursor:pointer">นำเข้าผัง
+      <input type="file" accept="application/json" style="display:none" onchange="importLayout(this)"></label>
+    <button class="btn ghost sm" onclick="clearLayout()">ล้างผัง</button>
+    <button class="btn ghost sm" onclick="resetLayout()">คืนค่าเริ่มต้น</button>
+    <span style="color:var(--dim);font-size:13px;margin-left:auto">${ZONES.length} โซน · ${baht(ZONES.reduce((a,x)=>a+x.capacity,0))} ที่นั่ง</span>
+  </div>
+  <div class="map-layout" style="grid-template-columns:1fr 336px">
+    <div class="map-box">${arenaSVG(true)}</div>
+    <div class="side">${zoneProps(z)}</div>
+  </div>`;
+}
+
+function zoneProps(z){
+  if(!z) return `<div class="card cart"><h4>ยังไม่ได้เลือกโซน</h4>
+    <div class="empty">แตะโซนบนผังเพื่อแก้ไข<br>หรือกด “เพิ่มโซน” เพื่อวางโซนใหม่</div></div>`;
+  const t=TR(z.tier);
+  return `<div class="card cart" style="margin-bottom:14px">
+    <h4>โซนที่เลือก</h4>
+    <div class="grid" style="grid-template-columns:1fr 1fr;gap:10px">
+      <div class="field" style="margin:0"><label class="f">ชื่อโซน</label>
+        <input value="${z.id}" onchange="setZ('id',this.value)"></div>
+      <div class="field" style="margin:0"><label class="f">ระดับราคา</label>
+        <select onchange="setZ('tier',this.value)">
+          ${tierList().map(([k,v])=>`<option value="${k}" ${z.tier===k?'selected':''}>${baht(v.price)} ฿${v.standing?' · ยืน':''}</option>`).join('')}
+        </select></div>
+      <div class="field" style="margin:0"><label class="f">ตำแหน่ง X</label>
+        <input type="number" value="${Math.round(z.cx)}" onchange="setZ('cx',+this.value)"></div>
+      <div class="field" style="margin:0"><label class="f">ตำแหน่ง Y</label>
+        <input type="number" value="${Math.round(z.cy)}" onchange="setZ('cy',+this.value)"></div>
+      <div class="field" style="margin:0"><label class="f">กว้าง</label>
+        <input type="number" min="24" value="${Math.round(z.w)}" onchange="setZ('w',+this.value)"></div>
+      <div class="field" style="margin:0"><label class="f">สูง</label>
+        <input type="number" min="20" value="${Math.round(z.h)}" onchange="setZ('h',+this.value)"></div>
+      <div class="field" style="margin:0;grid-column:1/-1"><label class="f">หมุน ${Math.round(z.rot||0)}°</label>
+        <input type="range" min="-90" max="90" step="1" value="${Math.round(z.rot||0)}"
+          oninput="rotLive(+this.value)"
+          onchange="setZ('rot',+this.value)"></div>
+    </div>
+    ${z.standing ? `
+      <div class="field" style="margin:14px 0 0"><label class="f">จำนวนบัตรยืนทั้งหมด</label>
+        <input type="number" min="1" value="${z.capacity}" onchange="setZ('capacity',+this.value)"></div>
+      <div class="tot"><span>ขายแล้ว</span><span class="mono">${baht(z.sold)} ใบ</span></div>`
+    : `
+      <div class="grid" style="grid-template-columns:1fr 1fr;gap:10px;margin-top:12px">
+        <div class="field" style="margin:0"><label class="f">จำนวนแถว</label>
+          <input type="number" min="1" max="26" value="${z.rows}" onchange="setZ('rows',+this.value)"></div>
+        <div class="field" style="margin:0"><label class="f">ที่นั่ง/แถว</label>
+          <input type="number" min="1" max="40" value="${z.cols}" onchange="setZ('cols',+this.value)"></div>
+      </div>
+      <div class="tot"><span>ที่นั่งจริง</span><span class="mono">${baht(z.capacity)} ที่ (ว่าง ${baht(avail(z))})</span></div>`}
+  </div>
+  ${z.standing?'':seatEditor(z)}`;
+}
+
+function seatEditor(z){
+  const t=TR(z.tier);
+  const rows=[];
+  for(let r=0;r<z.rows;r++){
+    const cells=[];
+    for(let c=1;c<=z.cols;c++){
+      const k=ROWS[r]+c, st=z.seats[k];
+      const style = st==='none' ? 'background:transparent;box-shadow:inset 0 0 0 1px rgba(255,255,255,.13)'
+                  : st==='hold' ? 'background:#F5C451'
+                  : st==='sold' ? 'background:#2A2438'
+                  : 'background:'+t.color;
+      cells.push(`<button class="seat mini${st==='none'?' gap':''}" style="${style}"
+        title="${ROWS[r]}${c} — ${st==='none'?'ไม่มีเก้าอี้':st==='hold'?'ถูกจองรอชำระ':st==='sold'?'ปิดขาย/ขายแล้ว':'ว่าง'}"
+        onclick="editSeat('${k}')"></button>`);
+    }
+    rows.push(`<div class="srow"><button class="rl rbtn" title="สลับทั้งแถว"
+        onclick="fillRow(${r}, '${Object.keys(z.seats).filter(k=>k[0]===ROWS[r]).every(k=>z.seats[k]==='none')?'free':'none'}')">${ROWS[r]}</button>${cells.join('')}</div>`);
+  }
+  return `<div class="card cart">
+    <h4>ผังเก้าอี้ในโซน ${z.id}</h4>
+    <div class="modes">
+      <button class="${S.seatMode==='exists'?'on':''}" onclick="go('admin',{seatMode:'exists'})">มี / ไม่มีเก้าอี้</button>
+      <button class="${S.seatMode==='sell'?'on':''}" onclick="go('admin',{seatMode:'sell'})">เปิด / ปิดขาย</button>
+    </div>
+    <div class="seatwrap" style="padding:14px 6px;max-height:340px;overflow:auto">
+      <div class="stagebar" style="font-size:10px;padding:6px;margin-bottom:14px">STAGE</div>
+      ${rows.join('')}
+    </div>
+    <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap">
+      <button class="btn ghost sm" onclick="fillZone('free')">เปิดขายทั้งโซน</button>
+      <button class="btn ghost sm" onclick="fillZone('none')">ลบเก้าอี้ทั้งโซน</button>
+    </div>
+    <p style="font-size:12px;color:var(--dim);margin:12px 0 0;line-height:1.7">
+      แตะเก้าอี้เพื่อสลับสถานะตามโหมดที่เลือก · แตะตัวอักษรหน้าแถวเพื่อสลับทั้งแถว
+      (ใช้เว้นทางเดินหรือทำผังทรงโค้ง)</p>
+  </div>`;
+}
+
+/* ── ลากโซนบนผัง ────────────────────────────────────────── */
+function mountMapEditor(){
+  const svg=document.getElementById('editSvg'); if(!svg) return;
+  let drag=null;
+  const toVB=e=>{const r=svg.getBoundingClientRect();
+    return {x:(e.clientX-r.left)*(780/r.width), y:(e.clientY-r.top)*(706/r.height)};};
+  svg.addEventListener('pointerdown',e=>{
+    const g=e.target.closest ? e.target.closest('.zone') : null; if(!g) return;
+    const z=ZMAP[g.dataset.id]; if(!z) return;
+    S.sel=z.id;
+    svg.querySelectorAll('.zone').forEach(n=>n.classList.toggle('sel', n===g));
+    const p=toVB(e);
+    drag={g,z,ox:p.x-z.cx,oy:p.y-z.cy};
+    try{ svg.setPointerCapture(e.pointerId); }catch(_){}
+    e.preventDefault();
+  });
+  svg.addEventListener('pointermove',e=>{
+    if(!drag) return;
+    const p=toVB(e), g0=S.snap||1;
+    let nx=Math.round((p.x-drag.ox)/g0)*g0, ny=Math.round((p.y-drag.oy)/g0)*g0;
+    drag.z.cx=Math.max(10,Math.min(770,nx));
+    drag.z.cy=Math.max(78,Math.min(688,ny));
+    drag.g.setAttribute('transform',`translate(${drag.z.cx} ${drag.z.cy})`);
+  });
+  const stop=()=>{ if(!drag) return; drag=null; render(); };
+  svg.addEventListener('pointerup',stop);
+  svg.addEventListener('pointercancel',stop);
+  svg.addEventListener('pointerleave',e=>{ if(drag && e.buttons===0) stop(); });
+}
+
+/* ══════════════════════════════════════════════════════════
+   9. CRM ADMIN
+   ══════════════════════════════════════════════════════════ */
+function vAdmin(){
+  const n=pendingSlips().length;
+  const tabs=[['dash','ภาพรวม'],['orders','คำสั่งซื้อ'],['slip','ตรวจสลิป'+(n?' ('+n+')':'')],
+              ['cust','ลูกค้า'],['inv','สต็อกที่นั่ง'],['price','ราคาบัตร'],['map','ออกแบบผัง']];
+  return `<div class="sec-head"><h2 style="font-size:24px">CRM Dashboard</h2>
+    <span style="color:var(--dim);font-size:13px">ข้อมูล ณ 10 ส.ค. 2569</span></div>
+  <div class="tabs">${tabs.map(([k,l])=>`<button class="${S.adminTab===k?'on':''}" onclick="go('admin',{adminTab:'${k}',q:''})">${l}</button>`).join('')}</div>
+  ${({dash:aDash,orders:aOrders,slip:aSlip,cust:aCust,inv:aInv,price:aPrice,map:aMap}[S.adminTab]||aDash)()}
+  ${S.zoom?`<div class="zoom" onclick="closeZoom()"><img src="${S.zoom}" alt="สลิปขยาย"></div>`:''}`;
+}
+
+
+/* ══════════════════════════════════════════════════════════
+   9.6 จัดการระดับราคา (เฉพาะผู้ดูแลระบบ)
+   ══════════════════════════════════════════════════════════ */
+const DEFAULT_TIERS = JSON.parse(JSON.stringify(TIERS));
+const SWATCHES = ['#E8232A','#F47B20','#F5D02E','#5CC46A','#4FC3F7','#8E44AD','#EC4899','#7B1E23','#0EA5E9','#F5C451'];
+
+/* ให้รูปทรงของโซนตรงกับประเภทของระดับราคา (นั่ง / ยืน) */
+function syncZoneToTier(z){
+  const t = TIERS[z.tier]; if(!t) return;
+  if(t.standing && !z.standing){
+    z.standing=true; z.capacity=z.capacity||300; z.sold=Math.min(z.sold||0,z.capacity); delete z.seats;
+  } else if(!t.standing && z.standing){
+    delete z.standing; resizeSeats(z, z.rows||5, z.cols||8);
+  }
+}
+function syncCartPrices(){
+  S.cart.forEach(i=>{ const t=TIERS[i.tier]; if(t) i.price=t.price; });
+}
+function setTier(key, field, val){
+  const t=TIERS[key]; if(!t) return;
+  if(field==='price'){
+    const v=Math.max(0, Math.round(+val)||0);
+    t.price=v; syncCartPrices();
+  }
+  else if(field==='standing'){
+    t.standing = !!val;
+    if(!t.standing) delete t.standing;
+    ZONES.filter(z=>z.tier===key).forEach(syncZoneToTier);
+  }
+  else t[field]=val;
+  render();
+}
+function addTier(){
+  let n=1; while(TIERS['C'+n]) n++;
+  const key='C'+n;
+  TIERS[key]={price:1000, color:SWATCHES[(Object.keys(TIERS).length)%SWATCHES.length], label:'ระดับราคาใหม่ '+n};
+  toast('เพิ่มระดับราคาแล้ว — แก้ชื่อและราคาได้เลย');
+  render();
+}
+function delTier(key){
+  const used=ZONES.filter(z=>z.tier===key);
+  if(used.length) return toast('ลบไม่ได้ — ยังมี '+used.length+' โซนใช้ราคานี้อยู่ ('+used.map(z=>z.id).join(', ')+')');
+  if(Object.keys(TIERS).length<=1) return toast('ต้องเหลือระดับราคาอย่างน้อย 1 ระดับ');
+  delete TIERS[key];
+  if(S.filterTier===key) S.filterTier=null;
+  toast('ลบระดับราคาแล้ว'); render();
+}
+function resetTiers(){
+  Object.keys(TIERS).forEach(k=>delete TIERS[k]);
+  Object.entries(DEFAULT_TIERS).forEach(([k,v])=>TIERS[k]={...v});
+  ZONES.forEach(z=>{ if(!TIERS[z.tier]) z.tier=Object.keys(TIERS)[0]; syncZoneToTier(z); });
+  syncCartPrices();
+  toast('คืนค่าราคาเริ่มต้นแล้ว'); render();
+}
+/* ปรับราคาทุกระดับพร้อมกันเป็นเปอร์เซ็นต์ */
+function bumpAll(pct){
+  Object.values(TIERS).forEach(t=>{
+    t.price = Math.max(0, Math.round(t.price*(1+pct/100)/10)*10);
+  });
+  syncCartPrices();
+  toast((pct>0?'ขึ้นราคา ':'ลดราคา ')+Math.abs(pct)+'% ทุกระดับแล้ว');
+  render();
+}
+
+function aPrice(){
+  const paid = orders.filter(o=>o.status===ST.PAID);
+  const revBy = {}; paid.forEach(o=>revBy[o.tier]=(revBy[o.tier]||0)+o.total);
+  return `<div class="toolbar">
+    <button class="btn sm" onclick="addTier()">+ เพิ่มระดับราคา</button>
+    <button class="btn ghost sm" onclick="bumpAll(10)">ขึ้นราคา 10%</button>
+    <button class="btn ghost sm" onclick="bumpAll(-10)">ลดราคา 10%</button>
+    <button class="btn ghost sm" onclick="resetTiers()">คืนค่าเริ่มต้น</button>
+    <span style="color:var(--dim);font-size:13px;margin-left:auto">
+      ${Object.keys(TIERS).length} ระดับ · มูลค่าที่นั่งทั้งหมด ${baht(ZONES.reduce((a,z)=>a+z.capacity*(TIERS[z.tier]?TIERS[z.tier].price:0),0))} ฿</span>
+  </div>
+  <div class="card tblwrap"><table><thead><tr>
+    <th>สี</th><th>ชื่อระดับราคา</th><th>ราคา (บาท)</th><th>ประเภท</th><th>โซนที่ใช้</th><th>ที่นั่ง</th><th>รายได้แล้ว</th><th></th>
+  </tr></thead><tbody>
+  ${tierList().map(([k,t])=>{
+    const zs=ZONES.filter(z=>z.tier===k);
+    const cap=zs.reduce((a,z)=>a+z.capacity,0);
+    const sold=zs.reduce((a,z)=>a+z.sold,0);
+    return `<tr>
+      <td><input type="color" class="cswatch" value="${t.color}" onchange="setTier('${k}','color',this.value)"></td>
+      <td><input value="${esc(t.label||'')}" onchange="setTier('${k}','label',this.value)" style="min-width:190px"></td>
+      <td><input type="number" min="0" step="50" value="${t.price}" onchange="setTier('${k}','price',this.value)" style="width:120px"></td>
+      <td><label class="chk"><input type="checkbox" ${t.standing?'checked':''} onchange="setTier('${k}','standing',this.checked)">โซนยืน</label></td>
+      <td>${zs.length?zs.map(z=>`<span class="pill" style="background:${t.color}22;color:${t.color};margin:1px 2px">${z.id}</span>`).join(''):'<span style="color:var(--dim)">—</span>'}</td>
+      <td class="mono">${baht(sold)} / ${baht(cap)}</td>
+      <td class="mono" style="color:var(--gold)">${baht(revBy[k]||0)} ฿</td>
+      <td><button class="btn ghost sm" onclick="delTier('${k}')">ลบ</button></td>
+    </tr>`;}).join('')}
+  </tbody></table></div>
+  <div class="grid" style="grid-template-columns:1fr 320px;margin-top:16px;align-items:start">
+    <div class="card" style="padding:20px">
+      <h4 style="font-size:14px;margin-bottom:14px">ผังสนามตามราคาปัจจุบัน</h4>
+      <div class="map-box">${arenaSVG()}</div>
+    </div>
+    <div>
+      ${pricingPanel()}
+      <p style="font-size:12px;color:var(--dim);margin:12px 2px 0;line-height:1.75">
+        แก้ราคาแล้วมีผลกับหน้าขายทันที คำสั่งซื้อที่ชำระไปแล้วยังคงยอดเดิมไว้
+        ระดับราคาที่ยังมีโซนใช้อยู่จะลบไม่ได้ ต้องย้ายโซนไประดับอื่นก่อน</p>
+    </div>
+  </div>`;
+}
+
+function aSlip(){
+  const list = pendingSlips();
+  const done = orders.filter(o=>o.verify && o.verify.method==='slip').slice(0,6);
+  return `<div class="toolbar">
+    <span style="font-size:13px;color:var(--muted)">โหมดจำลองผลตรวจสอบอัตโนมัติ</span>
+    <select style="min-width:170px;flex:none" onchange="CFG.gatewayMode=this.value;render()">
+      ${[['random','สุ่ม (เหมือนจริง)'],['success','พบรายการเสมอ'],['fail','ไม่พบรายการเสมอ']].map(([v,l])=>
+        `<option value="${v}" ${CFG.gatewayMode===v?'selected':''}>${l}</option>`).join('')}
+    </select>
+    <span style="color:var(--dim);font-size:13px;margin-left:auto">รอตรวจสอบ ${list.length} รายการ</span>
+  </div>
+  ${list.length? `<div class="grid" style="grid-template-columns:repeat(auto-fill,minmax(330px,1fr))">${list.map(slipCard).join('')}</div>`
+   : `<div class="card" style="padding:44px;text-align:center;color:var(--muted)">ไม่มีสลิปรอตรวจสอบ</div>`}
+  ${done.length?`<h4 style="font-size:14px;margin:26px 0 12px">ตรวจสอบล่าสุด</h4>
+    <div class="card tblwrap"><table><thead><tr><th>เลขที่</th><th>ลูกค้า</th><th>ยอด</th><th>ผู้ตรวจ</th><th>เมื่อ</th></tr></thead>
+    <tbody>${done.map(o=>`<tr><td class="mono" style="color:var(--gold)">${o.ref}</td><td>${o.custName}</td>
+      <td class="mono">${baht(o.total)} ฿</td><td>${o.verify.by}</td><td class="mono" style="color:var(--dim)">${o.verify.at}</td></tr>`).join('')}
+    </tbody></table></div>`:''}`;
+}
+function slipCard(o){
+  const sl=o.slip||{};
+  const mismatch = sl.amount!=null && +sl.amount !== +o.total;
+  return `<div class="card" style="padding:16px 17px">
+    <div style="display:flex;align-items:baseline;gap:10px">
+      <span class="mono" style="color:var(--gold);font-size:14px">${o.ref}</span>
+      <span style="font-size:13px">${o.custName}</span>
+      <span class="mono" style="margin-left:auto;font-size:15px">${baht(o.total)} ฿</span>
+    </div>
+    <div style="font-size:12px;color:var(--dim);margin:5px 0 12px">${o.event} · โซน ${o.zone} · ${o.qty} ใบ</div>
+    <div class="sliprev">
+      ${sl.img ? `<img src="${sl.img}" alt="สลิปของ ${o.ref}" onclick="zoomSlip('${o.ref}')">`
+               : `<div class="slipfake">
+                    <b>${sl.bank||'สลิปโอนเงิน'}</b>
+                    <div class="amt">${baht(sl.amount||o.total)}.00</div>
+                    <div>โอนสำเร็จ · ${sl.time||'-'}</div>
+                    <div class="mono">${sl.ref||'-'}</div>
+                    <small>ตัวอย่างสลิปจำลอง (ไม่มีไฟล์แนบ)</small>
+                  </div>`}
+    </div>
+    <div class="slipmeta">
+      <div><span>ธนาคาร</span><b>${sl.bank||'-'}</b></div>
+      <div><span>ยอดในสลิป</span><b class="${mismatch?'bad':''}">${baht(sl.amount||0)} ฿</b></div>
+      <div><span>เวลาโอน</span><b>${sl.time||'-'}</b></div>
+      <div><span>เลขอ้างอิง</span><b class="mono">${sl.ref||'-'}</b></div>
+    </div>
+    ${sl.note?`<div style="font-size:12px;color:var(--muted);margin-top:8px">หมายเหตุ: ${sl.note}</div>`:''}
+    ${mismatch?`<div class="notice bad" style="margin-top:10px">ยอดในสลิปไม่ตรงกับยอดที่ต้องชำระ (ต่างกัน ${baht(Math.abs(o.total-sl.amount))} ฿)</div>`
+              :`<div class="notice ok" style="margin-top:10px">ยอดในสลิปตรงกับยอดที่ต้องชำระ</div>`}
+    <input id="rj_${o.ref}" placeholder="เหตุผลถ้าปฏิเสธ (ไม่บังคับ)" style="margin-top:10px">
+    <div style="display:flex;gap:8px;margin-top:10px">
+      <button class="btn sm" style="flex:1" onclick="slipApprove('${o.ref}')">ยืนยันชำระเงินแล้ว</button>
+      <button class="btn ghost sm" onclick="slipReject('${o.ref}')">ปฏิเสธ</button>
+    </div>
+  </div>`;
+}
+function zoomSlip(ref){
+  const o=orders.find(x=>x.ref===ref); if(!o||!o.slip||!o.slip.img) return;
+  S.zoom=o.slip.img; render();
+}
+function closeZoom(){ S.zoom=null; render(); }
+
+function aDash(){
+  const paid = orders.filter(o=>o.status==='ชำระแล้ว');
+  const rev  = paid.reduce((s,o)=>s+o.total,0);
+  const tix  = paid.reduce((s,o)=>s+o.qty,0);
+  const cap  = ZONES.reduce((s,z)=>s+z.capacity,0);
+  const sold = ZONES.reduce((s,z)=>s+z.sold,0);
+  const aov  = Math.round(rev/Math.max(paid.length,1));
+  const conv = Math.round(paid.length/orders.length*100);
+
+  // รายได้ตามระดับราคา
+  const byTier={};
+  paid.forEach(o=>byTier[o.tier]=(byTier[o.tier]||0)+o.total);
+  const maxT=Math.max(...Object.values(byTier),1);
+  // ช่องทาง
+  const byCh={};
+  paid.forEach(o=>byCh[o.channel]=(byCh[o.channel]||0)+1);
+  const maxC=Math.max(...Object.values(byCh),1);
+  // segment
+  const bySeg={};
+  customers.forEach(c=>bySeg[c.seg]=(bySeg[c.seg]||0)+1);
+
+  return `
+  <div class="kpis">
+    ${kpi('รายได้รวม', baht(rev)+' ฿', '+18.4% จากรอบก่อน')}
+    ${kpi('บัตรที่ขายได้', baht(tix)+' ใบ', '+9.2%')}
+    ${kpi('อัตราการเต็ม', Math.round(sold/cap*100)+'%', baht(sold)+' / '+baht(cap)+' ที่นั่ง')}
+    ${kpi('ยอดเฉลี่ยต่อออเดอร์', baht(aov)+' ฿', '+3.1%')}
+    ${kpi('อัตราชำระสำเร็จ', conv+'%', (100-conv)+'% ยังไม่ชำระ/ยกเลิก', conv<80)}
+    ${kpi('สลิปรอตรวจสอบ', pendingSlips().length+' ใบ', pendingSlips().length?'กดแท็บตรวจสลิปเพื่อจัดการ':'เคลียร์หมดแล้ว', pendingSlips().length>0)}
+  </div>
+  <div class="grid" style="grid-template-columns:1.4fr 1fr">
+    <div class="card" style="padding:20px">
+      <h4 style="font-size:14px;margin-bottom:16px">รายได้แยกตามระดับราคา</h4>
+      ${tierList().map(([k,t])=>{
+        const v=byTier[k]||0;
+        return `<div style="display:flex;align-items:center;gap:12px;margin-bottom:11px">
+          <span style="width:62px;font-size:12.5px;color:var(--muted)" class="mono">${baht(t.price)}</span>
+          <span style="flex:1;background:rgba(255,255,255,.05);border-radius:5px"><span class="bar"
+            style="display:block;width:${Math.max(v/maxT*100,1.5)}%;background:${t.color}"></span></span>
+          <span class="mono" style="width:82px;text-align:right;font-size:12.5px">${baht(v)} ฿</span>
+        </div>`;}).join('')}
+    </div>
+    <div class="card" style="padding:20px">
+      <h4 style="font-size:14px;margin-bottom:16px">ช่องทางการขาย</h4>
+      ${CHAN.map(c=>{const v=byCh[c]||0;
+        return `<div style="display:flex;align-items:center;gap:12px;margin-bottom:13px">
+          <span style="width:74px;font-size:13px">${c}</span>
+          <span style="flex:1;background:rgba(255,255,255,.05);border-radius:5px"><span class="bar"
+            style="display:block;width:${Math.max(v/maxC*100,2)}%"></span></span>
+          <span class="mono" style="width:34px;text-align:right;font-size:12.5px">${v}</span>
+        </div>`;}).join('')}
+      <h4 style="font-size:14px;margin:24px 0 14px">กลุ่มลูกค้า</h4>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        ${SEG.map(s=>`<div class="card" style="padding:10px 14px;flex:1;min-width:64px;text-align:center">
+          <div style="font-family:'Bai Jamjuree';font-size:20px;font-weight:600">${bySeg[s]||0}</div>
+          <div style="font-size:11px;color:var(--dim)">${s}</div></div>`).join('')}
+      </div>
+    </div>
+  </div>
+  <div class="card" style="padding:20px;margin-top:16px">
+    <h4 style="font-size:14px;margin-bottom:14px">คำสั่งซื้อล่าสุด</h4>
+    <div class="tblwrap"><table><thead><tr><th>เลขที่</th><th>ลูกค้า</th><th>งาน</th><th>โซน</th><th>ยอด</th><th>สถานะ</th></tr></thead>
+    <tbody>${orders.slice(0,6).map(o=>`<tr>
+      <td class="mono" style="color:var(--gold)">${o.ref}</td><td>${o.custName}</td>
+      <td style="max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${o.event}</td>
+      <td class="mono">${o.zone}</td><td class="mono">${baht(o.total)} ฿</td><td>${statusPill(o.status)}</td>
+    </tr>`).join('')}</tbody></table></div>
+  </div>`;
+}
+function kpi(k,v,d,down){
+  return `<div class="card kpi"><div class="k">${k}</div><div class="v">${v}</div>
+    <div class="d ${down?'down':''}">${d}</div></div>`;
+}
+function aOrders(){
+  const q=S.q.toLowerCase();
+  const rows = orders.filter(o=>
+    (S.fstatus==='ทั้งหมด'||o.status===S.fstatus) &&
+    (!q || o.ref.toLowerCase().includes(q) || o.custName.toLowerCase().includes(q) || o.event.toLowerCase().includes(q))
+  );
+  return `<div class="toolbar">
+    <input placeholder="ค้นหาเลขที่ / ชื่อลูกค้า / ชื่องาน" value="${esc(S.q)}" oninput="S.q=this.value;render();document.querySelector('.toolbar input').focus()">
+    <select onchange="go('admin',{fstatus:this.value})">
+      ${['ทั้งหมด',...STATUS].map(s=>`<option ${S.fstatus===s?'selected':''}>${s}</option>`).join('')}
+    </select>
+    <button class="btn ghost sm" onclick="exportCSV()">ส่งออก CSV</button>
+    <span style="color:var(--dim);font-size:13px;margin-left:auto">${rows.length} รายการ</span>
+  </div>
+  <div class="card tblwrap"><table><thead><tr>
+    <th>เลขที่</th><th>วันที่</th><th>ลูกค้า</th><th>งาน</th><th>โซน</th><th>ใบ</th><th>ยอด</th><th>ช่องทาง</th><th>สถานะ</th>
+  </tr></thead><tbody>
+  ${rows.map(o=>`<tr>
+    <td class="mono" style="color:var(--gold)">${o.ref}</td>
+    <td class="mono" style="color:var(--muted)">${o.date}</td>
+    <td>${o.custName}</td>
+    <td style="max-width:210px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${o.event}</td>
+    <td><span class="pill" style="background:${TR(o.tier).color}22;color:${TR(o.tier).color}">${o.zone}</span></td>
+    <td class="mono">${o.qty}</td><td class="mono">${baht(o.total)}</td>
+    <td style="color:var(--muted)">${o.channel}</td><td>${statusPill(o.status)}</td>
+  </tr>`).join('')}
+  </tbody></table></div>`;
+}
+function aCust(){
+  const q=S.q.toLowerCase();
+  const rows=[...customers].sort((a,b)=>b.spend-a.spend)
+    .filter(c=>!q||c.name.toLowerCase().includes(q)||c.phone.includes(q)||c.email.includes(q));
+  const segColor={VIP:'#F5C451',Loyal:'#A855F7',Regular:'#4FC3F7',New:'#6B6288'};
+  return `<div class="toolbar">
+    <input placeholder="ค้นหาชื่อ / เบอร์ / อีเมล" value="${esc(S.q)}" oninput="S.q=this.value;render();document.querySelector('.toolbar input').focus()">
+    <span style="color:var(--dim);font-size:13px;margin-left:auto">${rows.length} คน</span>
+  </div>
+  <div class="card tblwrap"><table><thead><tr>
+    <th>ลูกค้า</th><th>ติดต่อ</th><th>กลุ่ม</th><th>ออเดอร์</th><th>ยอดสะสม</th><th>ช่องทางหลัก</th><th>สมัครเมื่อ</th>
+  </tr></thead><tbody>
+  ${rows.map(c=>`<tr>
+    <td><div style="display:flex;gap:10px;align-items:center">
+      <span class="avatar" style="background:${segColor[c.seg]}33;color:${segColor[c.seg]}">${c.name[0]}</span>
+      <div><div>${c.name}</div><div class="mono" style="font-size:11px;color:var(--dim)">${c.id}</div></div>
+    </div></td>
+    <td style="color:var(--muted);font-size:12.5px">${c.phone}<br>${c.email}</td>
+    <td><span class="pill" style="background:${segColor[c.seg]}22;color:${segColor[c.seg]}">${c.seg}</span></td>
+    <td class="mono">${c.orders}</td>
+    <td class="mono" style="color:var(--gold)">${baht(c.spend)} ฿</td>
+    <td style="color:var(--muted)">${c.channel}</td>
+    <td class="mono" style="color:var(--dim);font-size:12px">${c.joined}</td>
+  </tr>`).join('')}
+  </tbody></table></div>`;
+}
+function aInv(){
+  const rows=[...ZONES].sort((a,b)=>TR(b.tier).price-TR(a.tier).price);
+  return `<div class="toolbar">
+    <span style="color:var(--muted);font-size:13px">ปรับตำแหน่งโซนและเก้าอี้ได้ในแท็บออกแบบผัง</span>
+    <button class="btn ghost sm" style="margin-left:auto" onclick="go('admin',{adminTab:'map'})">เปิดโหมดออกแบบผัง →</button>
+  </div>
+  <div class="card tblwrap"><table><thead><tr>
+    <th>โซน</th><th>ระดับราคา</th><th>ความจุ</th><th>ขายแล้ว</th><th>คงเหลือ</th><th>อัตราการเต็ม</th><th>รายได้ (เต็ม)</th>
+  </tr></thead><tbody>
+  ${rows.map(z=>{const t=TR(z.tier),pct=Math.round(z.sold/Math.max(1,z.capacity)*100);
+    return `<tr>
+      <td><span class="pill" style="background:${t.color}22;color:${t.color}">${z.id}</span>${t.standing?' <span style="font-size:11px;color:var(--dim)">ยืน</span>':''}</td>
+      <td class="mono">${baht(t.price)} ฿</td>
+      <td class="mono">${baht(z.capacity)}</td>
+      <td class="mono">${baht(z.sold)}</td>
+      <td class="mono" style="color:${avail(z)===0?'var(--magenta)':'var(--mint)'}">${baht(avail(z))}</td>
+      <td><div style="display:flex;align-items:center;gap:9px">
+        <span style="flex:1;min-width:70px;background:rgba(255,255,255,.06);border-radius:5px">
+          <span class="bar" style="display:block;width:${pct}%;background:${t.color}"></span></span>
+        <span class="mono" style="font-size:12px;width:34px">${pct}%</span></div></td>
+      <td class="mono" style="color:var(--gold)">${baht(z.sold*t.price)} ฿</td>
+    </tr>`;}).join('')}
+  </tbody></table></div>`;
+}
+function exportCSV(){
+  const head=['ref','date','customer','event','zone','qty','total','channel','status'];
+  const csv=[head.join(',')].concat(orders.map(o=>
+    [o.ref,o.date,`"${o.custName}"`,`"${o.event}"`,o.zone,o.qty,o.total,o.channel,o.status].join(','))).join('\n');
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob(['\ufeff'+csv],{type:'text/csv;charset=utf-8'}));
+  a.download='ticketpass-orders.csv'; a.click();
+  toast('ส่งออกไฟล์ CSV แล้ว');
+}
+
+render();
+</script>
+</body>
+</html>
