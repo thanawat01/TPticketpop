@@ -714,6 +714,39 @@ function checkPayment(){
 }
 
 /* ── แนบสลิป ──────────────────────────────────────────── */
+/* ── รูปภาพงานแสดง (โปสเตอร์) ─────────────────────────── */
+function readEventImg(input,id){
+  const f=input.files && input.files[0]; if(!f) return;
+  if(!/^image\//.test(f.type)){ toast('แนบได้เฉพาะไฟล์รูปภาพ'); input.value=''; return; }
+  if(f.size > 5*1024*1024){ toast('ไฟล์ใหญ่เกิน 5 MB'); input.value=''; return; }
+  const rd=new FileReader();
+  rd.onload=()=>{
+    const ev=EVENTS.find(e=>e.id===id);
+    if(ev){ ev.img=rd.result; render(); toast('อัปเดตรูปภาพแล้ว'); }
+  };
+  rd.readAsDataURL(f);
+}
+function removeEventImg(id){
+  const ev=EVENTS.find(e=>e.id===id);
+  if(ev){ delete ev.img; render(); toast('ลบรูปภาพแล้ว · กลับไปใช้ธีมสี'); }
+}
+function setEventField(id,field,value){
+  const ev=EVENTS.find(e=>e.id===id); if(ev) ev[field]=value;
+}
+function addEventEntry(){
+  const n=EVENTS.length+1, id='ev'+Date.now();
+  const palette=['linear-gradient(135deg,#7C2D93,#C2185B 55%,#F4511E)','linear-gradient(135deg,#0F766E,#0EA5E9 60%,#A855F7)',
+                 'linear-gradient(135deg,#1E1B4B,#4338CA 60%,#F59E0B)','linear-gradient(135deg,#BE185D,#F472B6 60%,#FDE68A)'];
+  EVENTS.push({id, name:'งานแสดงใหม่ '+n, artist:'ระบุชื่อศิลปิน', kicker:'NEW EVENT', thai:'งานแสดงใหม่',
+    coverDate:'ระบุวันที่แสดง', venue:'ระบุสถานที่จัดงาน', cat:'คอนเสิร์ต',
+    rounds:[{d:'ระบุวันที่',t:'19:00'}], g:palette[n%palette.length]});
+  render(); toast('เพิ่มงานแสดงใหม่แล้ว แก้รายละเอียดและอัปโหลดรูปได้เลย');
+}
+function delEvent(id){
+  const idx=EVENTS.findIndex(e=>e.id===id); if(idx<0) return;
+  if(EVENTS.length<=1) return toast('ต้องเหลืองานแสดงอย่างน้อย 1 งาน');
+  EVENTS.splice(idx,1); render(); toast('ลบงานแสดงแล้ว');
+}
 function readSlip(input){
   const f=input.files && input.files[0]; if(!f) return;
   if(!/^image\//.test(f.type)) { toast('แนบได้เฉพาะไฟล์รูปภาพ'); input.value=''; return; }
@@ -830,6 +863,17 @@ function render(){
 /* ── หน้าปกงาน (poster) ────────────────────────────────── */
 function coverPoster(ev){
   const i = ev.id;
+  if(ev.img){
+    return `<div class="cover">
+      <div class="cover-frame">
+        <img src="${ev.img}" alt="${esc(ev.name)}" style="display:block;width:100%;aspect-ratio:320/186;object-fit:cover">
+        <div class="cover-strip">
+          <div class="cover-when">${ev.coverDate||ev.rounds[0].d}</div>
+          <div class="cover-where">${ev.venue}</div>
+        </div>
+      </div>
+    </div>`;
+  }
   return `<div class="cover">
     <div class="cover-frame">
       <div class="cover-kicker">${ev.kicker||ev.cat}</div>
@@ -962,8 +1006,11 @@ function vHome(){
 }
 function evCard(ev){
   const min = 2000, max = 7000;
+  const thumb = ev.img
+    ? `<img src="${ev.img}" alt="" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover">`
+    : `<div class="g" style="background:${ev.g};opacity:.75"></div>`;
   return `<article class="card ev" onclick="go('event',{event:EVENTS.find(e=>e.id==='${ev.id}'),round:0})">
-    <div class="thumb"><div class="g" style="background:${ev.g};opacity:.75"></div>
+    <div class="thumb">${thumb}
       ${ev.hot?'<span class="tag">ขายดี</span>':''}</div>
     <div class="body">
       <h4>${ev.name}</h4>
@@ -1803,11 +1850,11 @@ function mountMapEditor(){
 function vAdmin(){
   const n=pendingSlips().length;
   const tabs=[['dash','ภาพรวม'],['orders','คำสั่งซื้อ'],['slip','ตรวจสลิป'+(n?' ('+n+')':'')],
-              ['cust','ลูกค้า'],['inv','สต็อกที่นั่ง'],['price','ราคาบัตร'],['map','ออกแบบผัง']];
+              ['cust','ลูกค้า'],['inv','สต็อกที่นั่ง'],['price','ราคาบัตร'],['events','จัดการงานแสดง'],['map','ออกแบบผัง']];
   return `<div class="sec-head"><h2 style="font-size:24px">CRM Dashboard</h2>
     <span style="color:var(--dim);font-size:13px">ข้อมูล ณ 10 ส.ค. 2569</span></div>
   <div class="tabs">${tabs.map(([k,l])=>`<button class="${S.adminTab===k?'on':''}" onclick="go('admin',{adminTab:'${k}',q:''})">${l}</button>`).join('')}</div>
-  ${({dash:aDash,orders:aOrders,slip:aSlip,cust:aCust,inv:aInv,price:aPrice,map:aMap}[S.adminTab]||aDash)()}
+  ${({dash:aDash,orders:aOrders,slip:aSlip,cust:aCust,inv:aInv,price:aPrice,events:aEvents,map:aMap}[S.adminTab]||aDash)()}
   ${S.zoom?`<div class="zoom" onclick="closeZoom()"><img src="${S.zoom}" alt="สลิปขยาย"></div>`:''}`;
 }
 
@@ -1876,6 +1923,36 @@ function bumpAll(pct){
   render();
 }
 
+function aEvents(){
+  return `<div class="toolbar">
+    <button class="btn sm" onclick="addEventEntry()">+ เพิ่มงานแสดงใหม่</button>
+    <span style="color:var(--dim);font-size:13px;margin-left:auto">อัปโหลดรูปโปสเตอร์จริงแทนพื้นหลังไล่สี · ไฟล์รูปภาพ ไม่เกิน 5MB ต่อไฟล์</span>
+  </div>
+  <div class="evgrid">
+    ${EVENTS.map(ev=>`
+      <div class="card" style="overflow:hidden">
+        <div class="thumb">
+          ${ev.img?`<img src="${ev.img}" alt="" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover">`
+                  :`<div class="g" style="background:${ev.g};opacity:.75"></div>`}
+        </div>
+        <div class="body">
+          <label style="font-size:11px;color:var(--dim);display:block;margin-bottom:3px">ชื่องาน</label>
+          <input value="${esc(ev.name)}" onchange="setEventField('${ev.id}','name',this.value)" style="width:100%;margin-bottom:9px">
+          <label style="font-size:11px;color:var(--dim);display:block;margin-bottom:3px">ศิลปิน</label>
+          <input value="${esc(ev.artist)}" onchange="setEventField('${ev.id}','artist',this.value)" style="width:100%;margin-bottom:9px">
+          <label style="font-size:11px;color:var(--dim);display:block;margin-bottom:3px">สถานที่</label>
+          <input value="${esc(ev.venue)}" onchange="setEventField('${ev.id}','venue',this.value)" style="width:100%;margin-bottom:12px">
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <label class="btn sm" style="cursor:pointer">อัปโหลดรูปภาพ
+              <input type="file" accept="image/*" style="display:none" onchange="readEventImg(this,'${ev.id}')">
+            </label>
+            ${ev.img?`<button class="btn ghost sm" onclick="removeEventImg('${ev.id}')">ลบรูป</button>`:''}
+            <button class="btn ghost sm" onclick="delEvent('${ev.id}')">ลบงานนี้</button>
+          </div>
+        </div>
+      </div>`).join('')}
+  </div>`;
+}
 function aPrice(){
   const paid = orders.filter(o=>o.status===ST.PAID);
   const revBy = {}; paid.forEach(o=>revBy[o.tier]=(revBy[o.tier]||0)+o.total);
