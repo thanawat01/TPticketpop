@@ -1931,12 +1931,11 @@ function aEvents(){
   <div class="evgrid">
     ${EVENTS.map(ev=>`
       <div class="card" style="overflow:hidden">
-        <div class="thumb">
+        <div class="thumb" style="position:relative;aspect-ratio:3/4;height:auto;background:#171126;overflow:hidden">
           ${ev.img?`<img src="${ev.img}" alt="" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover">`
-                  :`<div class="g" style="background:${ev.g};opacity:.75"></div>`}
+                  :`<div class="g" style="position:absolute;inset:0;background:${ev.g};opacity:.75"></div>`}
         </div>
-        <div class="body">
-          <label style="font-size:11px;color:var(--dim);display:block;margin-bottom:3px">ชื่องาน</label>
+        <div class="body">          <label style="font-size:11px;color:var(--dim);display:block;margin-bottom:3px">ชื่องาน</label>
           <input value="${esc(ev.name)}" onchange="setEventField('${ev.id}','name',this.value)" style="width:100%;margin-bottom:9px">
           <label style="font-size:11px;color:var(--dim);display:block;margin-bottom:3px">ศิลปิน</label>
           <input value="${esc(ev.artist)}" onchange="setEventField('${ev.id}','artist',this.value)" style="width:100%;margin-bottom:9px">
